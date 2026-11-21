@@ -1,0 +1,21 @@
+{
+  "name": "primal-isle",
+  "private": true,
+  "description": "เกมเอาชีวิตรอดออนไลน์บนเกาะไดโนเสาร์ เล่นบนเว็บได้ทุกแพลตฟอร์ม",
+  "license": "MIT",
+  "type": "module",
+  "workspaces": [
+    "shared",
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "test": "npm test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "dev:server": "npm start -w server",
+    "dev:client": "npm run dev -w client"
+  },
+  "engines": {
+    "node": ">= 22.0.0"
+  }
+}

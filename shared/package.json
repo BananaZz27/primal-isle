@@ -1,0 +1,21 @@
+{
+  "name": "@primal/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "กติกาเกมแบบ pure function ใช้ร่วมกันทั้ง server และ client",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "simplex-noise": "^4.0.3"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.0",
+    "vitest": "^5.1.1"
+  }
+}
