@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { generateDecor, generateWorld, solidFromNodes, TILE_SIZE } from "@primal/shared";
 import { CAMERA_ZOOM } from "../config";
 import { combineInputs } from "../input/combine";
+import { InteractControls, pickTarget } from "../input/interact";
 import { KeyboardInput } from "../input/keyboard";
 import { TouchJoystick } from "../input/touchJoystick";
 import type { WorldRoom } from "../net/connection";
@@ -10,7 +11,9 @@ import { PlayerSprites } from "../render/players";
 import { ResourceView } from "../render/resourceNodes";
 import { buildTilemap } from "../render/tilemap";
 import { showConnectionLost, showReconnecting } from "../ui/hud";
+import { InventoryHud } from "../ui/inventory";
 import { showInvitePanel } from "../ui/invitePanel";
+import { StatsHud } from "../ui/stats";
 
 export interface WorldSceneData {
   room: WorldRoom;
@@ -26,6 +29,10 @@ export class WorldScene extends Phaser.Scene {
   private players!: PlayerSprites;
   private keyboard!: KeyboardInput;
   private joystick: TouchJoystick | null = null;
+  private interact!: InteractControls;
+  private statsHud!: StatsHud;
+  private inventoryHud!: InventoryHud;
+  private hudTimer = 0;
   private connected = true;
 
   constructor() {
@@ -58,6 +65,24 @@ export class WorldScene extends Phaser.Scene {
 
     const self = this.players.get(this.room.sessionId);
     if (self) cam.startFollow(self, true, 0.2, 0.2);
+
+    // โต้ตอบ: หาสิ่งที่ใกล้ที่สุดจากตำแหน่งที่เห็นบนจอ แล้วขอเซิร์ฟเวอร์ (เซิร์ฟเวอร์ตรวจซ้ำเสมอ)
+    const isDepleted = (id: number) => this.room.state.nodes.get(String(id))?.hp === 0;
+    this.interact = new InteractControls(this, TouchJoystick.wanted(), () => {
+      const me = this.room.state.players.get(this.room.sessionId);
+      if (!me || !this.connected) return;
+      const { x, y } = this.prediction.pos(me);
+      const target = pickTarget(x, y, decor, map, isDepleted);
+      if (target?.kind === "node") this.room.send("gather", { node: target.id });
+      else if (target?.kind === "water") this.room.send("drink", {});
+    });
+    this.statsHud = new StatsHud();
+    this.inventoryHud = new InventoryHud((item) => this.room.send("eat", { item }));
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.interact.destroy();
+      this.statsHud.destroy();
+      this.inventoryHud.destroy();
+    });
 
     this.watchConnection();
   }
@@ -121,7 +146,19 @@ export class WorldScene extends Phaser.Scene {
     const dir = this.joystick
       ? combineInputs(this.keyboard.read(), this.joystick.read())
       : this.keyboard.read();
-    this.prediction.tick(performance.now(), dir);
+    const now = performance.now();
+    this.prediction.tick(now, dir);
     this.players.update((p) => this.prediction.pos(p));
+    this.interact.update(now);
+
+    // HUD เป็น HTML อัปเดตทุก 200ms พอ ไม่ต้องทุกเฟรม
+    if (now - this.hudTimer > 200) {
+      this.hudTimer = now;
+      const me = this.room.state.players.get(this.room.sessionId);
+      if (me) {
+        this.statsHud.update(me);
+        this.inventoryHud.update(me);
+      }
+    }
   }
 }
