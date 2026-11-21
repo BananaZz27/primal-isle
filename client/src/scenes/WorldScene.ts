@@ -1,18 +1,31 @@
 import Phaser from "phaser";
-import type { Room } from "@colyseus/sdk";
 import { generateWorld, TILE_SIZE } from "@primal/shared";
-import type { WorldState } from "@primal/server/schema";
-import { buildTilemap } from "../render/tilemap";
 import { CAMERA_ZOOM } from "../config";
+import { combineInputs } from "../input/combine";
+import { KeyboardInput } from "../input/keyboard";
+import { TouchJoystick } from "../input/touchJoystick";
+import type { WorldRoom } from "../net/connection";
+import { startPrediction, type Prediction } from "../net/prediction";
+import { PlayerSprites } from "../render/players";
+import { buildTilemap } from "../render/tilemap";
+import { showConnectionLost } from "../ui/hud";
 import { showInvitePanel } from "../ui/invitePanel";
 
 export interface WorldSceneData {
-  room: Room<any, WorldState>;
+  room: WorldRoom;
 }
 
-/** ฉากในเกม: วาดเกาะจาก seed ของห้อง */
+/**
+ * ฉากในเกม — ต่อชิ้นส่วนเข้าด้วยกัน (ไม่มี logic เกมในไฟล์นี้):
+ * แผนที่ ← seed, ผู้เล่น ← state, input → ระบบทำนาย → เซิร์ฟเวอร์
+ */
 export class WorldScene extends Phaser.Scene {
-  protected room!: Room<any, WorldState>;
+  private room!: WorldRoom;
+  private prediction!: Prediction;
+  private players!: PlayerSprites;
+  private keyboard!: KeyboardInput;
+  private joystick: TouchJoystick | null = null;
+  private connected = true;
 
   constructor() {
     super("World");
@@ -20,6 +33,7 @@ export class WorldScene extends Phaser.Scene {
 
   init(data: WorldSceneData) {
     this.room = data.room;
+    this.connected = true;
   }
 
   create() {
@@ -27,11 +41,40 @@ export class WorldScene extends Phaser.Scene {
     buildTilemap(this, map);
 
     const worldPx = map.size * TILE_SIZE;
-    this.cameras.main.setBounds(0, 0, worldPx, worldPx);
-    this.cameras.main.setZoom(CAMERA_ZOOM);
-    this.cameras.main.centerOn(worldPx / 2, worldPx / 2);
+    const cam = this.cameras.main;
+    cam.setBounds(0, 0, worldPx, worldPx);
+    cam.setZoom(CAMERA_ZOOM);
 
-    const hideInvite = showInvitePanel(this.room.roomId);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, hideInvite);
+    this.players = new PlayerSprites(this, this.room);
+    this.prediction = startPrediction(this.room, map);
+    this.keyboard = new KeyboardInput(this);
+    if (TouchJoystick.wanted()) this.joystick = new TouchJoystick();
+
+    const self = this.players.get(this.room.sessionId);
+    if (self) cam.startFollow(self, true, 0.2, 0.2);
+
+    const cleanups: Array<() => void> = [showInvitePanel(this.room.roomId)];
+
+    this.room.onLeave(() => {
+      this.connected = false;
+      cleanups.push(showConnectionLost(() => this.scene.start("Menu")));
+    });
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      cleanups.forEach((fn) => fn());
+      this.joystick?.destroy();
+      this.joystick = null;
+      this.players.destroy();
+      if (this.connected) this.room.leave();
+    });
+  }
+
+  update() {
+    if (!this.connected) return;
+    const dir = this.joystick
+      ? combineInputs(this.keyboard.read(), this.joystick.read())
+      : this.keyboard.read();
+    this.prediction.tick(performance.now(), dir);
+    this.players.update((p) => this.prediction.pos(p));
   }
 }

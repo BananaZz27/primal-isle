@@ -9,7 +9,7 @@ const BORDER = 2;
 /** เกณฑ์ความสูง: ต่ำกว่า WATER = น้ำ, ต่ำกว่า SAND = หาดทราย, สูงกว่า FOREST = ป่า */
 const WATER_LEVEL = 0.0;
 const SAND_LEVEL = 0.07;
-const FOREST_LEVEL = 0.62;
+const FOREST_LEVEL = 0.74;
 
 /**
  * สร้างเกาะจาก seed
@@ -45,7 +45,7 @@ export function generateWorld(seed: number, size: number = WORLD_SIZE): WorldMap
 
       if (height < WATER_LEVEL) tiles[i] = Tile.Water;
       else if (height < SAND_LEVEL) tiles[i] = Tile.Sand;
-      else if (height > FOREST_LEVEL || forestNoise(nx * 6, ny * 6) > 0.3) tiles[i] = Tile.Forest;
+      else if (height > FOREST_LEVEL || forestNoise(nx * 6, ny * 6) > 0.35) tiles[i] = Tile.Forest;
       else tiles[i] = Tile.Grass;
     }
   }

@@ -158,3 +158,30 @@ input {
   user-select: text;
   -webkit-user-select: text;
 }
+
+/* ---------- joystick บนจอสัมผัส ---------- */
+.joystick-zone {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  touch-action: none;
+}
+.joystick-base {
+  position: fixed;
+  width: 112px;
+  height: 112px;
+  border-radius: 50%;
+  background: #ffffff22;
+  border: 2px solid #ffffff55;
+}
+.joystick-knob {
+  position: absolute;
+  left: 32px;
+  top: 32px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #ffffffaa;
+}
