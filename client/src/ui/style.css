@@ -203,7 +203,7 @@ input {
   gap: 4px;
   padding: 6px 10px;
   border-radius: 10px;
-  background: #102a44aa;
+  background: #102a44e6;
   pointer-events: none;
 }
 .stat {
@@ -245,7 +245,7 @@ input {
   gap: 6px;
   padding: 6px;
   border-radius: 12px;
-  background: #102a44aa;
+  background: #102a44e6;
 }
 .slot {
   position: relative;
