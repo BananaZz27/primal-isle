@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import {
   frameAt,
@@ -58,4 +58,18 @@ describe("ninja atlas", () => {
   });
 
   it("the tileset file exists", () => expect(existsSync(assets("tileset.png"))).toBe(true));
+
+  it("every survivor sheet is the full 64x112 layout (4 directions × 7 rows)", () => {
+    for (const id of SURVIVOR_IDS) expect(pngSize(assets(`characters/${id}.png`)), id).toEqual({ w: 64, h: 112 });
+  });
+
+  it("the tileset is 448 wide and TILESET_ROWS tall", () =>
+    expect(pngSize(assets("tileset.png"))).toEqual({ w: 448, h: TILESET_ROWS * 16 }));
 });
+
+/** อ่านขนาดภาพ PNG จาก header (IHDR) โดยไม่ต้องใช้ไลบรารีภาพ */
+function pngSize(path: string): { w: number; h: number } {
+  const buf = readFileSync(path);
+  return { w: buf.readUInt32BE(16), h: buf.readUInt32BE(20) };
+}
+

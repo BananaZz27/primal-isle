@@ -66,7 +66,7 @@ export const TREE_RECTS = [
 ];
 
 /** ไฟล์ตัวละครที่ดูเป็นคนธรรมดา/นักสำรวจ ใช้ตาม colorIndex ของผู้เล่น */
-export const SURVIVOR_IDS = ["14", "3", "4", "6", "8", "12", "13", "25"] as const;
+export const SURVIVOR_IDS = ["14", "3", "17", "6", "9", "12", "13", "25"] as const;
 
 /** ชื่อ texture ใน Phaser */
 export const TEX = {
