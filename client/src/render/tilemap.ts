@@ -6,17 +6,16 @@ import { GROUND_DECOR, TEX } from "../art/ninjaAtlas";
 export interface WorldLayers {
   /** พื้น: น้ำ ทราย หญ้า ป่า + ขอบชายฝั่ง */
   ground: Phaser.Tilemaps.TilemapLayer;
-  /** ของตกแต่งเตี้ย (ดอกไม้ กอหญ้า หิน) — อยู่ใน tilemap จึงถูกตัดทิ้งเองเมื่ออยู่นอกจอ */
+  /** ดอกไม้ — อยู่ใน tilemap จึงถูกตัดทิ้งเองเมื่ออยู่นอกจอ */
   decor: Phaser.Tilemaps.TilemapLayer;
 }
 
+/** ใน tilemap มีเฉพาะดอกไม้ (ตกแต่งล้วน) — ทรัพยากรอยู่ใน ResourceView เพราะเปลี่ยนหน้าตาได้ */
 const SMALL_FRAMES: Partial<Record<DecorKind, number[]>> = {
   [DecorKind.Flower]: GROUND_DECOR.flower,
-  [DecorKind.Tuft]: GROUND_DECOR.tuft,
-  [DecorKind.Pebble]: GROUND_DECOR.pebble,
 };
 
-/** สร้างพื้นเกาะ 2 ชั้นจาก WorldMap และรายการของตกแต่ง (ต้นไม้ไม่อยู่ที่นี่ — ดู placeTrees) */
+/** สร้างพื้นเกาะ 2 ชั้นจาก WorldMap และรายการของตกแต่ง (ทรัพยากรไม่อยู่ที่นี่ — ดู ResourceView) */
 export function buildTilemap(scene: Phaser.Scene, map: WorldMap, decor: Decor[]): WorldLayers {
   const data: number[][] = [];
   for (let ty = 0; ty < map.size; ty++) {

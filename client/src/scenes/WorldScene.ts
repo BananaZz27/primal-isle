@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { generateDecor, generateWorld, TILE_SIZE } from "@primal/shared";
+import { generateDecor, generateWorld, solidFromNodes, TILE_SIZE } from "@primal/shared";
 import { CAMERA_ZOOM } from "../config";
 import { combineInputs } from "../input/combine";
 import { KeyboardInput } from "../input/keyboard";
@@ -7,7 +7,7 @@ import { TouchJoystick } from "../input/touchJoystick";
 import type { WorldRoom } from "../net/connection";
 import { startPrediction, type Prediction } from "../net/prediction";
 import { PlayerSprites } from "../render/players";
-import { placeTrees } from "../render/decor";
+import { ResourceView } from "../render/resourceNodes";
 import { buildTilemap } from "../render/tilemap";
 import { showConnectionLost, showReconnecting } from "../ui/hud";
 import { showInvitePanel } from "../ui/invitePanel";
@@ -41,7 +41,10 @@ export class WorldScene extends Phaser.Scene {
     const map = generateWorld(this.room.state.seed);
     const decor = generateDecor(map);
     buildTilemap(this, map, decor);
-    placeTrees(this, decor);
+    const resources = new ResourceView(this, decor, this.room);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => resources.destroy());
+    // ต้นไม้/หินที่ยังไม่ถูกเก็บหมดเป็นของแข็ง — ใช้สถานะจากเซิร์ฟเวอร์ (ตัวเดียวกับที่เซิร์ฟเวอร์ใช้ชน)
+    const solid = solidFromNodes(map, decor, (id) => this.room.state.nodes.get(String(id))?.hp === 0);
 
     const worldPx = map.size * TILE_SIZE;
     const cam = this.cameras.main;
@@ -49,7 +52,7 @@ export class WorldScene extends Phaser.Scene {
     cam.setZoom(CAMERA_ZOOM);
 
     this.players = new PlayerSprites(this, this.room);
-    this.prediction = startPrediction(this.room, map);
+    this.prediction = startPrediction(this.room, map, solid);
     this.keyboard = new KeyboardInput(this);
     if (TouchJoystick.wanted()) this.joystick = new TouchJoystick();
 

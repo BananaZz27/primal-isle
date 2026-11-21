@@ -73,3 +73,25 @@ function pngSize(path: string): { w: number; h: number } {
   return { w: buf.readUInt32BE(16), h: buf.readUInt32BE(20) };
 }
 
+
+describe("survival art", () => {
+  it("has an icon for every item and every stat, and their files exist", async () => {
+    const { ITEM_ICONS, STAT_ICONS, BUSH_FRAME, STUMP_FRAME } = await import("../src/art/ninjaAtlas");
+    const { ITEM_IDS } = await import("@primal/shared");
+    expect(Object.keys(ITEM_ICONS).sort()).toEqual([...ITEM_IDS].sort());
+    for (const icon of [...Object.values(ITEM_ICONS), ...Object.values(STAT_ICONS)]) {
+      if (icon.kind === "file") expect(existsSync(assets(icon.path)), icon.path).toBe(true);
+      else expect(icon.frame).toBeLessThan(FRAMES);
+    }
+    expect(Object.keys(STAT_ICONS).sort()).toEqual(["health", "hunger", "thirst"]);
+    for (const f of [BUSH_FRAME, STUMP_FRAME]) expect(f).toBeLessThan(FRAMES);
+  });
+
+  it("labels every item in Thai", async () => {
+    const { itemLabel } = await import("../src/ui/labels");
+    expect(itemLabel("wood")).toBe("ไม้");
+    expect(itemLabel("stone")).toBe("หิน");
+    expect(itemLabel("berry")).toBe("ผลไม้");
+    expect(itemLabel("fiber")).toBe("เส้นใย");
+  });
+});

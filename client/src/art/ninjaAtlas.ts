@@ -75,3 +75,25 @@ export const TEX = {
   tree: (i: number) => `tree-${i}`,
   survivor: (id: string) => `survivor-${id}`,
 };
+
+/** พุ่มไม้ผลไม้ (ทรัพยากร) และตอไม้ (ต้นไม้ที่ถูกตัดหมด) */
+export const BUSH_FRAME = frameAt(13, 9);
+export const STUMP_FRAME = frameAt(9, 8);
+
+/** ไอคอน: ช่องใน tileset หรือไฟล์แยก (path สัมพัทธ์กับ ASSET_ROOT) */
+export type Icon = { kind: "tile"; frame: number } | { kind: "file"; path: string };
+
+/** ไอคอนของในกระเป๋า */
+export const ITEM_ICONS: Record<"wood" | "stone" | "berry" | "fiber", Icon> = {
+  wood: { kind: "tile", frame: STUMP_FRAME },
+  stone: { kind: "tile", frame: frameAt(0, 7) },
+  berry: { kind: "tile", frame: frameAt(1, 9) },
+  fiber: { kind: "file", path: "items/tea-leaf.png" },
+};
+
+/** ไอคอนค่าสถานะ */
+export const STAT_ICONS: Record<"health" | "hunger" | "thirst", Icon> = {
+  health: { kind: "file", path: "items/heart.png" },
+  hunger: { kind: "file", path: "items/beaf.png" },
+  thirst: { kind: "file", path: "items/water-pot.png" },
+};
