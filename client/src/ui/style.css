@@ -1,0 +1,52 @@
+/* สไตล์หน้าเว็บ: เกมเต็มจอ, UI ลอยทับ, และหน้า "หมุนจอ" */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #1f5f99;
+  font-family: system-ui, "Noto Sans Thai", "Leelawadee UI", sans-serif;
+  color: #fff;
+  touch-action: none; /* กันจอเลื่อน/ซูมตอนลากนิ้วเล่น */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#game {
+  position: fixed;
+  inset: 0;
+}
+
+#ui {
+  position: fixed;
+  inset: 0;
+  pointer-events: none; /* ให้แตะทะลุไปเกม ยกเว้นปุ่มที่เปิด pointer-events เอง */
+}
+
+#ui .panel {
+  pointer-events: auto;
+}
+
+/* หน้า "หมุนจอ": แสดงเฉพาะจอสัมผัสที่ถือแนวตั้ง */
+#rotate {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+  font-size: 22px;
+  background: #102a44;
+}
+
+@media (orientation: portrait) and (pointer: coarse) {
+  #rotate {
+    display: flex;
+  }
+}
