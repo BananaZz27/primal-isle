@@ -5,3 +5,4 @@ export * from "./world/tiles";
 export * from "./world/rng";
 export * from "./world/generate";
 export * from "./world/spawn";
+export * from "./movement/step";
