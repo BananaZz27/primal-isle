@@ -56,7 +56,7 @@ export const SAND_RIM = {
 export const GROUND_DECOR = {
   flower: [frameAt(1, 8), frameAt(2, 8)],
   tuft: [frameAt(0, 8)],
-  pebble: [frameAt(4, 8)],
+  pebble: [frameAt(0, 7), frameAt(1, 7)], // หินเล็ก + หินกลาง
 };
 
 /** ต้นไม้ใหญ่ (พิกเซลใน tileset) — ต้นกลม และต้นสน */

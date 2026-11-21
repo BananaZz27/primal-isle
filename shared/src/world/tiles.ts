@@ -1,4 +1,4 @@
-/** ชนิดของพื้นแต่ละช่องบนแผนที่ (ค่าตัวเลขต้องตรงกับลำดับภาพใน texture "tiles" ฝั่ง client) */
+/** ชนิดของพื้นแต่ละช่องบนแผนที่ (ภาพที่ใช้วาดเลือกใน client/src/art/groundFrames.ts) */
 export enum Tile {
   Water = 0,
   Sand = 1,

@@ -4,6 +4,13 @@ export type Facing = "down" | "up" | "left" | "right";
 /** ระยะขยับต่อเฟรม (px) ที่น้อยกว่านี้ถือว่ายืนอยู่ (กันตัวละครสั่นตอนระบบทำนายแก้ตำแหน่งนิดๆ) */
 const MOVE_EPSILON = 0.05;
 
+/**
+ * จะเปลี่ยนแกน (แนวนอน ↔ แนวตั้ง) ก็ต่อเมื่ออีกแกนขยับมากกว่าเกิน 1.2 เท่า
+ * ตอนเดินทแยง 45° สองแกนเท่ากันเป๊ะ แต่การเกลี่ยตำแหน่งทำให้ต่างกันนิดเดียวสลับไปมาทุกเฟรม
+ * ถ้าไม่มีช่วงกันนี้ ตัวละครจะหันสลับไปมาจนท่าเดินกระตุก
+ */
+const AXIS_SWITCH_RATIO = 1.2;
+
 /** ในไฟล์ตัวละคร: คอลัมน์ไหนคือทิศไหน */
 export const FACING_COLUMN: Record<Facing, number> = { down: 0, up: 1, left: 2, right: 3 };
 const SHEET_COLS = 4;
@@ -17,10 +24,16 @@ export function walkFrames(facing: Facing): number[] {
 /**
  * หาทิศจากระยะที่ขยับในเฟรมนี้
  * - ขยับน้อยมาก → ยืนนิ่ง หันทิศเดิม
- * - เดินทแยง → หันตามแกนที่ขยับมากกว่า (เท่ากันให้แนวนอนชนะ)
+ * - เดินทแยง → หันตามแกนที่ขยับมากกว่า แต่ยึดแกนเดิมไว้ก่อนจนกว่าอีกแกนจะมากกว่าชัดเจน
  */
 export function facingFrom(dx: number, dy: number, prev: Facing): { facing: Facing; moving: boolean } {
-  if (Math.abs(dx) + Math.abs(dy) <= MOVE_EPSILON) return { facing: prev, moving: false };
-  if (Math.abs(dx) >= Math.abs(dy)) return { facing: dx > 0 ? "right" : "left", moving: true };
+  const ax = Math.abs(dx);
+  const ay = Math.abs(dy);
+  if (ax + ay <= MOVE_EPSILON) return { facing: prev, moving: false };
+
+  const wasHorizontal = prev === "left" || prev === "right";
+  const horizontal = wasHorizontal ? ax * AXIS_SWITCH_RATIO >= ay : ax > ay * AXIS_SWITCH_RATIO;
+
+  if (horizontal) return { facing: dx > 0 ? "right" : "left", moving: true };
   return { facing: dy > 0 ? "down" : "up", moving: true };
 }
