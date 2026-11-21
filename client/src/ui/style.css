@@ -50,3 +50,111 @@ body {
     display: flex;
   }
 }
+
+/* ---------- ปุ่มและช่องกรอก ---------- */
+button {
+  font: inherit;
+  font-size: 17px;
+  padding: 12px 18px;
+  border: 0;
+  border-radius: 10px;
+  background: #f0a030;
+  color: #2b1d14;
+  font-weight: 700;
+  cursor: pointer;
+}
+button.secondary {
+  background: #ffffff22;
+  color: #fff;
+}
+button.small {
+  font-size: 13px;
+  padding: 6px 10px;
+}
+button:disabled {
+  opacity: 0.5;
+}
+input {
+  font: inherit;
+  font-size: 17px;
+  padding: 11px 12px;
+  border-radius: 10px;
+  border: 2px solid #ffffff33;
+  background: #0d2236;
+  color: #fff;
+  min-width: 0;
+}
+
+/* ---------- เมนู ---------- */
+.menu {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(420px, 92vw);
+  max-height: 96vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: #102a44ee;
+  box-shadow: 0 8px 30px #0008;
+}
+.menu h1 {
+  margin: 0;
+  font-size: 28px;
+  text-align: center;
+}
+.menu .subtitle {
+  margin: 0 0 6px;
+  text-align: center;
+  opacity: 0.8;
+}
+.menu label {
+  font-size: 14px;
+  opacity: 0.8;
+}
+.menu .row {
+  display: flex;
+  gap: 8px;
+}
+.menu .row input {
+  flex: 1;
+}
+.menu .divider {
+  margin-top: 6px;
+  font-size: 14px;
+  opacity: 0.7;
+  text-align: center;
+}
+.menu .error {
+  min-height: 1.2em;
+  margin: 0;
+  color: #ffb4a8;
+  text-align: center;
+}
+
+/* ---------- ป้ายรหัสโลกมุมจอ ---------- */
+.invite {
+  position: absolute;
+  top: max(8px, env(safe-area-inset-top));
+  right: max(8px, env(safe-area-inset-right));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  max-width: 60vw;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: #102a44cc;
+  font-size: 14px;
+}
+.invite .link {
+  width: 100%;
+  font-size: 12px;
+  padding: 4px 6px;
+  user-select: text;
+  -webkit-user-select: text;
+}

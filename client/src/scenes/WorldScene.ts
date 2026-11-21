@@ -4,6 +4,7 @@ import { generateWorld, TILE_SIZE } from "@primal/shared";
 import type { WorldState } from "@primal/server/schema";
 import { buildTilemap } from "../render/tilemap";
 import { CAMERA_ZOOM } from "../config";
+import { showInvitePanel } from "../ui/invitePanel";
 
 export interface WorldSceneData {
   room: Room<any, WorldState>;
@@ -29,5 +30,8 @@ export class WorldScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, worldPx, worldPx);
     this.cameras.main.setZoom(CAMERA_ZOOM);
     this.cameras.main.centerOn(worldPx / 2, worldPx / 2);
+
+    const hideInvite = showInvitePanel(this.room.roomId);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, hideInvite);
   }
 }
