@@ -17,18 +17,18 @@ export interface MoveInputLike {
 
 const clamp1 = (v: number) => (v < -1 ? -1 : v > 1 ? 1 : v || 0);
 
+/** ฟังก์ชันบอกว่าช่อง (tx, ty) มีของแข็ง (ต้นไม้/หิน) ขวางไหม */
+export type SolidFn = (tx: number, ty: number) => boolean;
+const NOTHING_SOLID: SolidFn = () => false;
+
 /** กล่องชน (hitbox) ที่ตำแหน่ง (x, y) ทับช่องที่เดินไม่ได้หรือไม่ — เช็กทั้ง 4 มุม */
-function blocked(map: WorldMap, x: number, y: number): boolean {
+function blocked(map: WorldMap, x: number, y: number, solid: SolidFn): boolean {
   const left = Math.floor((x - PLAYER_HALF) / TILE_SIZE);
   const right = Math.floor((x + PLAYER_HALF) / TILE_SIZE);
   const top = Math.floor((y - PLAYER_HALF) / TILE_SIZE);
   const bottom = Math.floor((y + PLAYER_HALF) / TILE_SIZE);
-  return (
-    !isWalkable(tileAt(map, left, top)) ||
-    !isWalkable(tileAt(map, right, top)) ||
-    !isWalkable(tileAt(map, left, bottom)) ||
-    !isWalkable(tileAt(map, right, bottom))
-  );
+  const free = (tx: number, ty: number) => isWalkable(tileAt(map, tx, ty)) && !solid(tx, ty);
+  return !free(left, top) || !free(right, top) || !free(left, bottom) || !free(right, bottom);
 }
 
 /**
@@ -38,7 +38,13 @@ function blocked(map: WorldMap, x: number, y: number): boolean {
  *
  * ขยับทีละแกน (X ก่อน แล้ว Y) ถ้าแกนไหนชนก็หยุดแกนนั้น อีกแกนยังไปต่อได้ → เดินไถลไปตามกำแพงได้
  */
-export function stepPlayer(entity: EntityState, input: MoveInputLike, dt: number, map: WorldMap): void {
+export function stepPlayer(
+  entity: EntityState,
+  input: MoveInputLike,
+  dt: number,
+  map: WorldMap,
+  solid: SolidFn = NOTHING_SOLID,
+): void {
   let dirX = clamp1(input.moveX);
   let dirY = clamp1(input.moveY);
 
@@ -52,11 +58,11 @@ export function stepPlayer(entity: EntityState, input: MoveInputLike, dt: number
   let vy = dirY * PLAYER_SPEED;
 
   const nextX = entity.x + vx * dt;
-  if (vx !== 0 && !blocked(map, nextX, entity.y)) entity.x = nextX;
+  if (vx !== 0 && !blocked(map, nextX, entity.y, solid)) entity.x = nextX;
   else vx = 0;
 
   const nextY = entity.y + vy * dt;
-  if (vy !== 0 && !blocked(map, entity.x, nextY)) entity.y = nextY;
+  if (vy !== 0 && !blocked(map, entity.x, nextY, solid)) entity.y = nextY;
   else vy = 0;
 
   entity.vx = vx;

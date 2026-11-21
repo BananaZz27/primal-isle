@@ -9,6 +9,8 @@ export enum DecorKind {
   Flower = 1,
   Tuft = 2,
   Pebble = 3,
+  /** พุ่มไม้ผลไม้ (ขั้นที่ 3) */
+  Bush = 4,
 }
 
 export interface Decor {
@@ -28,7 +30,8 @@ const SMALL_CHANCE = 0.1;
  * วางของตกแต่งทั้งเกาะจาก seed — ทุกเครื่องได้ผลเหมือนกันเสมอ
  * เดินทีละช่องตามแถว (ลำดับตายตัว) ใช้ตัวสุ่มแยกจากตัวที่ใช้สร้างแผนที่
  * - ต้นไม้: เฉพาะพื้นป่า, ไม่ติดต้นอื่น (ต้นไม้กว้าง 2 ช่อง), ไม่อยู่ใกล้จุดเกิด
- * - ของเล็ก (ดอกไม้/กอหญ้า/หิน): เฉพาะพื้นหญ้า
+ * - ของเล็ก (ดอกไม้/กอหญ้า/หิน/พุ่มไม้): เฉพาะพื้นหญ้า
+ * ⚠️ ลำดับใน list นี้คือ id ของทรัพยากร — เปลี่ยนกติกาที่นี่ = id เปลี่ยน (ระวังเมื่อมีระบบบันทึกโลก)
  */
 export function generateDecor(map: WorldMap): Decor[] {
   const rand = mulberry32((map.seed ^ 0x9e3779b9) >>> 0);
@@ -48,8 +51,11 @@ export function generateDecor(map: WorldMap): Decor[] {
         trees.add(key(map, tx, ty));
         out.push({ kind: DecorKind.Tree, tx, ty, variant });
       } else if (tile === Tile.Grass && roll < SMALL_CHANCE) {
-        const third = roll / SMALL_CHANCE; // 0..1 แบ่งเป็น 3 ชนิด
-        const kind = third < 0.45 ? DecorKind.Flower : third < 0.85 ? DecorKind.Tuft : DecorKind.Pebble;
+        const r = roll / SMALL_CHANCE; // 0..1 แบ่งเป็น 4 ชนิด: ดอกไม้ 35% กอหญ้า 30% หิน 20% พุ่มไม้ 15%
+        const kind =
+          r < 0.35 ? DecorKind.Flower : r < 0.65 ? DecorKind.Tuft : r < 0.85 ? DecorKind.Pebble : DecorKind.Bush;
+        // หินเป็นของแข็ง ห้ามวางใกล้จุดเกิด (ผู้เล่นจะเกิดติดในหิน)
+        if (kind === DecorKind.Pebble && nearSpawn.has(key(map, tx, ty))) continue;
         out.push({ kind, tx, ty, variant });
       }
     }

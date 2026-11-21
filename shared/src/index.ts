@@ -7,3 +7,5 @@ export * from "./world/generate";
 export * from "./world/spawn";
 export * from "./world/decor";
 export * from "./movement/step";
+export * from "./rules/resources";
+export * from "./rules/survival";

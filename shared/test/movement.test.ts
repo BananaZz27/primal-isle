@@ -52,6 +52,14 @@ describe("stepPlayer", () => {
     expect(e.x).toBe(PLAYER_HALF + 0.5);
   });
 
+  it("a solid tile blocks movement like water", () => {
+    const startX = 2 * TILE_SIZE - PLAYER_HALF - 0.5;
+    const e = { x: startX, y: 24, vx: 0, vy: 0 };
+    stepPlayer(e, { moveX: 1, moveY: 0 }, DT, open, (tx) => tx === 2);
+    expect(e.x).toBe(startX);
+    expect(e.vx).toBe(0);
+  });
+
   it("no input → no movement, velocity zero", () => {
     const e = { x: 80, y: 80, vx: 50, vy: -50 };
     stepPlayer(e, { moveX: 0, moveY: 0 }, DT, open);
