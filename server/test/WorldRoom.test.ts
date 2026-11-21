@@ -7,6 +7,7 @@ import {
   PLAYER_SPEED,
   TICK_RATE,
   DEFAULT_NAME,
+  MAX_CATCHUP_STEPS,
 } from "@primal/shared";
 
 import appConfig from "../src/app.config";
@@ -79,6 +80,51 @@ describe("WorldRoom", () => {
     await room.waitForNextTimestep();
 
     expect(p.x).toBeCloseTo(startX + PLAYER_SPEED / TICK_RATE);
+  });
+
+  it("a burst of 60 inputs cannot move faster than the catch-up budget (speed hack)", async () => {
+    const room = await colyseus.createRoom<WorldRoom>("world", { seed: 1234 });
+    const c = await colyseus.connectTo(room, { name: "cheater" });
+    const p = room.state.players.get(c.sessionId)!;
+    const startX = p.x;
+
+    const input = c.input<MoveInput>({ mode: "reliable" });
+    for (let i = 0; i < 60; i++) {
+      input.data.moveX = 1;
+      input.data.moveY = 0;
+      input.send();
+    }
+    await room.waitForNextMessage();
+    await room.waitForNextTimestep();
+
+    expect(p.x - startX).toBeLessThanOrEqual((MAX_CATCHUP_STEPS * PLAYER_SPEED) / TICK_RATE + 0.001);
+  });
+
+  it("buffered inputs are not lost — they are applied over the following ticks", async () => {
+    const room = await colyseus.createRoom<WorldRoom>("world", { seed: 1234 });
+    const c = await colyseus.connectTo(room, { name: "a" });
+    const p = room.state.players.get(c.sessionId)!;
+    const startX = p.x;
+
+    const input = c.input<MoveInput>({ mode: "reliable" });
+    for (let i = 0; i < 8; i++) {
+      input.data.moveX = 1;
+      input.data.moveY = 0;
+      input.send();
+    }
+    await room.waitForNextMessage();
+    for (let t = 0; t < 12; t++) await room.waitForNextTimestep();
+
+    expect(p.x - startX).toBeCloseTo((8 * PLAYER_SPEED) / TICK_RATE);
+  });
+
+  it("keeps a dropped player in the world while they reconnect", async () => {
+    const room = await colyseus.createRoom<WorldRoom>("world", { seed: 1234 });
+    const c = await colyseus.connectTo(room, { name: "phone" });
+    c.reconnection.enabled = false; // เทสต์ฝั่งเซิร์ฟเวอร์อย่างเดียว ไม่ให้ SDK ต่อกลับเอง
+    (c as any).connection.close(4999, "wifi lost"); // ปิดแบบไม่ใช่การออกปกติ = หลุด
+    await new Promise((r) => setTimeout(r, 300));
+    expect(room.state.players.has(c.sessionId)).toBe(true);
   });
 
   it("two players see each other in state", async () => {

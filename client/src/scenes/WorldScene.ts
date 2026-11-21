@@ -8,7 +8,7 @@ import type { WorldRoom } from "../net/connection";
 import { startPrediction, type Prediction } from "../net/prediction";
 import { PlayerSprites } from "../render/players";
 import { buildTilemap } from "../render/tilemap";
-import { showConnectionLost } from "../ui/hud";
+import { showConnectionLost, showReconnecting } from "../ui/hud";
 import { showInvitePanel } from "../ui/invitePanel";
 
 export interface WorldSceneData {
@@ -53,19 +53,60 @@ export class WorldScene extends Phaser.Scene {
     const self = this.players.get(this.room.sessionId);
     if (self) cam.startFollow(self, true, 0.2, 0.2);
 
-    const cleanups: Array<() => void> = [showInvitePanel(this.room.roomId)];
+    this.watchConnection();
+  }
 
-    this.room.onLeave(() => {
+  /**
+   * เฝ้าดูการเชื่อมต่อ:
+   * - onDrop: เน็ตสะดุด → หยุดส่ง input + แสดง "กำลังเชื่อมต่อใหม่…" (มีปุ่มกลับเมนู)
+   * - onReconnect: ต่อกลับได้ → เล่นต่อตัวเดิม
+   * - onLeave: หมดหวังแล้ว → แสดง "หลุดการเชื่อมต่อ"
+   */
+  private watchConnection() {
+    const room = this.room;
+    // ลองต่อกลับราว 20 วินาที ให้ตรงกับที่เซิร์ฟเวอร์รอ (RECONNECT_SECONDS) — ค่าเริ่มต้นของ SDK นานเกือบนาที
+    room.reconnection.maxRetries = 8;
+    room.reconnection.maxDelay = 3000;
+
+    const hideInvite = showInvitePanel(room.roomId);
+    let hideNotice: (() => void) | null = null;
+    const setNotice = (show: (() => () => void) | null) => {
+      hideNotice?.();
+      hideNotice = show ? show() : null;
+    };
+    const toMenu = () => this.scene.start("Menu");
+
+    const onDrop = () => {
       this.connected = false;
-      cleanups.push(showConnectionLost(() => this.scene.start("Menu")));
-    });
+      setNotice(() => showReconnecting(toMenu));
+    };
+    const onReconnect = () => {
+      this.connected = true;
+      setNotice(null);
+    };
+    const onLeave = () => {
+      this.connected = false;
+      setNotice(() => showConnectionLost(toMenu));
+    };
+    room.onDrop(onDrop);
+    room.onReconnect(onReconnect);
+    room.onLeave(onLeave);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      cleanups.forEach((fn) => fn());
+      // ถอดตัวฟังก่อน leave() ไม่งั้น onLeave จะเด้งป้ายค้างทับหน้าเมนู
+      room.onDrop.remove(onDrop);
+      room.onReconnect.remove(onReconnect);
+      room.onLeave.remove(onLeave);
+      room.leave(); // ออกแบบตั้งใจ = ยกเลิกการต่อกลับอัตโนมัติด้วย
+
+      setNotice(null);
+      hideInvite();
       this.joystick?.destroy();
       this.joystick = null;
       this.players.destroy();
-      if (this.connected) this.room.leave();
+      // คืนปุ่ม W/A/S/D/ลูกศร ให้ช่องพิมพ์ในเมนู (Phaser ไม่ล้าง key capture ให้เองตอนปิดฉาก)
+      this.input.keyboard?.removeAllKeys(true, true);
+      this.input.keyboard?.clearCaptures();
     });
   }
 

@@ -10,6 +10,11 @@ export function clampSteps(steps: number): number {
   return Math.min(Math.floor(steps), MAX_CATCHUP_STEPS);
 }
 
+/** ข้อความระหว่างเน็ตสะดุดและกำลังต่อกลับ */
+export function reconnectingText(): string {
+  return "เน็ตสะดุด กำลังเชื่อมต่อใหม่…";
+}
+
 /** ข้อความเมื่อหลุดจากโลก */
 export function connectionLostText(): string {
   return "หลุดการเชื่อมต่อกับโลก";

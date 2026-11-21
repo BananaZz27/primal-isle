@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { MAX_CATCHUP_STEPS } from "@primal/shared";
 import { quantizeStick } from "../src/input/joystick";
 import { combineInputs } from "../src/input/combine";
-import { clampSteps, connectionLostText } from "../src/net/frameSteps";
+import { clampSteps, connectionLostText, reconnectingText } from "../src/net/frameSteps";
 
 describe("quantizeStick", () => {
   it("is idle inside the deadzone", () => expect(quantizeStick(2, 0, 50)).toEqual({ moveX: 0, moveY: 0 }));
@@ -30,3 +30,5 @@ describe("clampSteps", () => {
 });
 
 it("connectionLostText is Thai", () => expect(connectionLostText()).toBe("หลุดการเชื่อมต่อกับโลก"));
+
+it("reconnectingText is Thai", () => expect(reconnectingText()).toBe("เน็ตสะดุด กำลังเชื่อมต่อใหม่…"));

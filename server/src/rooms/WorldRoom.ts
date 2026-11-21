@@ -9,6 +9,10 @@ import {
   type WorldMap,
 } from "@primal/shared";
 import { MoveInput, Player, WorldState } from "./schema/WorldState.js";
+import { StepBudget } from "./stepBudget.js";
+
+/** เวลาที่รอผู้เล่นที่เน็ตหลุดให้ต่อกลับมา (วินาที) */
+export const RECONNECT_SECONDS = 20;
 
 export interface WorldCreateOptions {
   /** ไม่ส่งมา = สุ่ม */
@@ -33,6 +37,7 @@ export class WorldRoom extends Room<{ state: WorldState; input: MoveInput }> {
   /** แผนที่เก็บไว้ในห้อง ไม่ได้อยู่ใน state (ไม่ต้องส่งทางเน็ต) */
   private map!: WorldMap;
   private joinCount = 0;
+  private budget = new StepBudget();
 
   /**
    * บัฟเฟอร์ input ต่อผู้เล่น — sanitize บังคับค่าทุกช่องให้อยู่ใน -1..1 ตอนถอดรหัส (ไม่เชื่อข้อมูลจากเน็ต)
@@ -72,16 +77,30 @@ export class WorldRoom extends Room<{ state: WorldState; input: MoveInput }> {
     );
   }
 
-  onLeave(client: Client, _code: CloseCode) {
-    this.state.players.delete(client.sessionId);
+  /**
+   * เน็ตหลุดโดยไม่ได้ตั้งใจออก (เช่น Wi-Fi มือถือสะดุด): เก็บตัวละครไว้ RECONNECT_SECONDS วินาที
+   * ถ้าต่อกลับมาทันก็เล่นต่อตัวเดิม ถ้าไม่ทัน Colyseus จะเรียก onLeave ให้เอง
+   */
+  onDrop(client: Client) {
+    this.allowReconnection(client, RECONNECT_SECONDS);
   }
 
-  /** 1 input ที่ได้รับ = เดิน 1 step เป๊ะ ตรงกับที่ client ทำนายไว้ */
+  onLeave(client: Client, _code: CloseCode) {
+    this.state.players.delete(client.sessionId);
+    this.budget.forget(client.sessionId);
+  }
+
+  /**
+   * 1 input ที่ได้รับ = เดิน 1 step เป๊ะ ตรงกับที่ client ทำนายไว้
+   * แต่ใช้ได้ไม่เกินโควตาต่อ tick (ดู StepBudget) — input ที่เกินรอใน tick ถัดไป
+   */
   private step(ctx: StepContext) {
     for (const [sessionId, player] of this.state.players) {
       const channel = this.inputs.get(sessionId);
       if (!channel) continue;
-      for (const input of channel) stepPlayer(player, input, ctx.dt, this.map);
+      const batch = channel.take(this.budget.allowance(sessionId));
+      for (const input of batch) stepPlayer(player, input, ctx.dt, this.map);
+      this.budget.spend(sessionId, batch.length);
     }
   }
 }
