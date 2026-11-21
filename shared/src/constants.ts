@@ -32,3 +32,6 @@ export const DEFAULT_NAME = "ผู้รอดชีวิต";
  * กันกรณีพับจอแล้วกลับมา — ไม่ให้ยิง input ที่ค้างไว้รัวๆ
  */
 export const MAX_CATCHUP_STEPS = 5;
+
+/** ของตกแต่งบนเกาะสูงสุด (กันมือถือหน่วง) */
+export const MAX_DECOR = 3000;
