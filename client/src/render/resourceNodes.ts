@@ -5,6 +5,7 @@ import type { NodeState } from "@primal/server/schema";
 import { BUSH_FRAME, GROUND_DECOR, STUMP_FRAME, TEX, TREE_RECTS } from "../art/ninjaAtlas";
 import type { WorldRoom } from "../net/connection";
 import { itemLabel } from "../ui/labels";
+import { nodeChange } from "./nodeChange";
 
 interface NodeView {
   decor: Decor;
@@ -21,6 +22,8 @@ interface NodeView {
 export class ResourceView {
   private views = new Map<number, NodeView>();
   private unsubscribe: Array<() => void> = [];
+  /** false ระหว่างรับ state เดิมตอนเพิ่งเข้าโลก (onAdd เล่นย้อนของที่มีอยู่แล้วทันที) */
+  private live = false;
 
   constructor(
     private scene: Phaser.Scene,
@@ -39,6 +42,7 @@ export class ResourceView {
       }),
       callbacks.onRemove("nodes", (_node: NodeState, key: string) => this.setHp(Number(key), null)),
     );
+    this.live = true; // จากนี้ไปทุกการเปลี่ยนคือของจริงที่เพิ่งเกิด
   }
 
   destroy() {
@@ -67,12 +71,10 @@ export class ResourceView {
   private setHp(id: number, hp: number | null) {
     const view = this.views.get(id);
     if (!view) return;
-    const before = view.hp ?? nodeDef(view.decor.kind)!.hits;
-    const after = hp ?? nodeDef(view.decor.kind)!.hits;
+    const { hit, depleted } = nodeChange(view.hp, hp, nodeDef(view.decor.kind)!.hits, this.live);
     view.hp = hp;
-
-    if (after < before) this.hitFeedback(view);
-    this.applyLook(view, after === 0);
+    if (hit) this.hitFeedback(view);
+    this.applyLook(view, depleted);
   }
 
   private applyLook(view: NodeView, depleted: boolean) {

@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { BALANCE, inReach, nodeDef, TILE_SIZE, touchesWater, type Decor, type WorldMap } from "@primal/shared";
 import { el, uiRoot } from "../ui/dom";
+import { RepeatGate } from "./repeatGate";
 
 export type Target = { kind: "node"; id: number } | { kind: "water" } | null;
 
@@ -35,7 +36,7 @@ const REPEAT_MS = BALANCE.gatherCooldownMs + 30;
  */
 export class InteractControls {
   private held = false;
-  private lastFire = -Infinity;
+  private gate = new RepeatGate(REPEAT_MS);
   private keys: Phaser.Input.Keyboard.Key[] = [];
   private button: HTMLButtonElement | null = null;
 
@@ -45,13 +46,17 @@ export class InteractControls {
     private onAct: () => void,
   ) {
     const kb = scene.input.keyboard;
-    if (kb) this.keys = [kb.addKey("SPACE"), kb.addKey("E")];
+    if (kb) {
+      this.keys = [kb.addKey("SPACE"), kb.addKey("E")];
+      for (const k of this.keys) k.on("down", () => this.gate.press());
+    }
 
     if (touch) {
       const button = el("button", { className: "panel act-button", text: "✋" });
       button.addEventListener("pointerdown", (e) => {
         e.preventDefault();
         this.held = true;
+        this.gate.press();
       });
       for (const ev of ["pointerup", "pointercancel", "pointerleave"] as const)
         button.addEventListener(ev, () => (this.held = false));
@@ -62,15 +67,8 @@ export class InteractControls {
 
   /** เรียกทุกเฟรม */
   update(now: number): void {
-    const down = this.held || this.keys.some((k) => k.isDown);
-    if (!down) {
-      this.lastFire = -Infinity; // ปล่อยแล้วกดใหม่ = ทำทันที
-      return;
-    }
-    if (now - this.lastFire >= REPEAT_MS) {
-      this.lastFire = now;
-      this.onAct();
-    }
+    const held = this.held || this.keys.some((k) => k.isDown);
+    if (this.gate.update(now, held)) this.onAct();
   }
 
   destroy(): void {

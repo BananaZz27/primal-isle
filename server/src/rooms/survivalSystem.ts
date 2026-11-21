@@ -11,8 +11,11 @@ import {
   touchesWater,
   type Decor,
   type ItemId,
+  TICK_RATE,
   type WorldMap,
 } from "@primal/shared";
+
+const TICK_MS = 1000 / TICK_RATE;
 import { NodeState, type Player, type WorldState } from "./schema/WorldState.js";
 
 /**
@@ -42,7 +45,8 @@ export class SurvivalSystem {
     const d = this.decor[nodeId];
     const def = d && nodeDef(d.kind);
     if (!def) return;
-    if (now - (this.lastGather.get(sessionId) ?? -Infinity) < BALANCE.gatherCooldownMs) return;
+    // นาฬิกาของห้องเดินทีละ tick จึงเผื่อให้ 1 tick ไม่งั้นการกดที่ตรงจังหวะพอดีจะถูกปฏิเสธแบบสุ่ม
+    if (now - (this.lastGather.get(sessionId) ?? -Infinity) < BALANCE.gatherCooldownMs - TICK_MS) return;
     if (!inReach(player.x, player.y, d.tx, d.ty)) return;
 
     const key = String(nodeId);
