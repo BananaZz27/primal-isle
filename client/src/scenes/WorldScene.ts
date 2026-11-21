@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { generateWorld, TILE_SIZE } from "@primal/shared";
+import { generateDecor, generateWorld, TILE_SIZE } from "@primal/shared";
 import { CAMERA_ZOOM } from "../config";
 import { combineInputs } from "../input/combine";
 import { KeyboardInput } from "../input/keyboard";
@@ -7,6 +7,7 @@ import { TouchJoystick } from "../input/touchJoystick";
 import type { WorldRoom } from "../net/connection";
 import { startPrediction, type Prediction } from "../net/prediction";
 import { PlayerSprites } from "../render/players";
+import { placeTrees } from "../render/decor";
 import { buildTilemap } from "../render/tilemap";
 import { showConnectionLost, showReconnecting } from "../ui/hud";
 import { showInvitePanel } from "../ui/invitePanel";
@@ -38,7 +39,9 @@ export class WorldScene extends Phaser.Scene {
 
   create() {
     const map = generateWorld(this.room.state.seed);
-    buildTilemap(this, map);
+    const decor = generateDecor(map);
+    buildTilemap(this, map, decor);
+    placeTrees(this, decor);
 
     const worldPx = map.size * TILE_SIZE;
     const cam = this.cameras.main;

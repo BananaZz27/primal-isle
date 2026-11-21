@@ -1,23 +1,46 @@
 import Phaser from "phaser";
-import { TILE_SIZE, type WorldMap } from "@primal/shared";
+import { DecorKind, TILE_SIZE, type Decor, type WorldMap } from "@primal/shared";
+import { groundFrame } from "../art/groundFrames";
+import { GROUND_DECOR, TEX } from "../art/ninjaAtlas";
 
-/**
- * สร้างแผนที่ Phaser จาก WorldMap
- * ค่าในแต่ละช่อง (Tile enum) = ลำดับภาพใน texture "tiles" พอดี จึงใช้ตรงๆ ได้
- */
-export function buildTilemap(scene: Phaser.Scene, map: WorldMap): Phaser.Tilemaps.TilemapLayer {
+export interface WorldLayers {
+  /** พื้น: น้ำ ทราย หญ้า ป่า + ขอบชายฝั่ง */
+  ground: Phaser.Tilemaps.TilemapLayer;
+  /** ของตกแต่งเตี้ย (ดอกไม้ กอหญ้า หิน) — อยู่ใน tilemap จึงถูกตัดทิ้งเองเมื่ออยู่นอกจอ */
+  decor: Phaser.Tilemaps.TilemapLayer;
+}
+
+const SMALL_FRAMES: Partial<Record<DecorKind, number[]>> = {
+  [DecorKind.Flower]: GROUND_DECOR.flower,
+  [DecorKind.Tuft]: GROUND_DECOR.tuft,
+  [DecorKind.Pebble]: GROUND_DECOR.pebble,
+};
+
+/** สร้างพื้นเกาะ 2 ชั้นจาก WorldMap และรายการของตกแต่ง (ต้นไม้ไม่อยู่ที่นี่ — ดู placeTrees) */
+export function buildTilemap(scene: Phaser.Scene, map: WorldMap, decor: Decor[]): WorldLayers {
   const data: number[][] = [];
   for (let ty = 0; ty < map.size; ty++) {
-    data.push(Array.from(map.tiles.subarray(ty * map.size, (ty + 1) * map.size)));
+    const row: number[] = [];
+    for (let tx = 0; tx < map.size; tx++) row.push(groundFrame(map, tx, ty));
+    data.push(row);
   }
 
   const tilemap = scene.make.tilemap({ data, tileWidth: TILE_SIZE, tileHeight: TILE_SIZE });
-  const tileset = tilemap.addTilesetImage("tiles", "tiles", TILE_SIZE, TILE_SIZE, 0, 0);
-  if (!tileset) throw new Error("tileset 'tiles' missing — BootScene must paint it first");
+  const tileset = tilemap.addTilesetImage(TEX.tiles, TEX.tiles, TILE_SIZE, TILE_SIZE, 0, 0);
+  if (!tileset) throw new Error(`tileset '${TEX.tiles}' missing — BootScene must load it first`);
 
-  const layer = tilemap.createLayer(0, tileset, 0, 0);
-  if (!layer || !(layer instanceof Phaser.Tilemaps.TilemapLayer)) {
-    throw new Error("could not create tilemap layer");
+  const ground = asLayer(tilemap.createLayer(0, tileset, 0, 0));
+  const decorLayer = asLayer(tilemap.createBlankLayer("decor", tileset, 0, 0));
+
+  for (const d of decor) {
+    const frames = SMALL_FRAMES[d.kind];
+    if (frames) decorLayer.putTileAt(frames[d.variant % frames.length], d.tx, d.ty);
   }
+
+  return { ground, decor: decorLayer };
+}
+
+function asLayer(layer: unknown): Phaser.Tilemaps.TilemapLayer {
+  if (!(layer instanceof Phaser.Tilemaps.TilemapLayer)) throw new Error("could not create tilemap layer");
   return layer;
 }

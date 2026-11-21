@@ -35,4 +35,4 @@ export const SHIRT_COLOURS = [
 ];
 
 /** สีพื้นหลังนอกแผนที่ (ทะเลลึก) */
-export const SEA_COLOUR = "#1f5f99";
+export const SEA_COLOUR = "#72c4e6";
