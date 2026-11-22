@@ -1,6 +1,8 @@
 import {
   BALANCE,
+  FOOD,
   findSpawn,
+  gatherYield,
   freshStats,
   inReach,
   nodeDef,
@@ -60,15 +62,16 @@ export class SurvivalSystem {
     this.lastGather.set(sessionId, now);
     node.hp -= 1;
     if (node.hp === 0) node.regrowAt = now + def.regrowSec * 1000;
-    this.addItem(player, def.item, 1);
+    this.addItem(player, def.item, gatherYield(def.item, (item) => player.inventory.get(item) ?? 0));
   }
 
   eat(player: Player, item: unknown): void {
-    if (item !== "berry") return;
-    const have = player.inventory.get("berry") ?? 0;
+    if (typeof item !== "string" || !Object.prototype.hasOwnProperty.call(FOOD, item)) return;
+    const food = FOOD[item as ItemId]!;
+    const have = player.inventory.get(item) ?? 0;
     if (have <= 0) return;
-    setCount(player, "berry", have - 1);
-    player.hunger = Math.min(BALANCE.statMax, player.hunger + BALANCE.berryFood);
+    setCount(player, item, have - 1);
+    player.hunger = Math.min(BALANCE.statMax, player.hunger + food);
   }
 
   drink(player: Player): void {
@@ -119,7 +122,7 @@ export class SurvivalSystem {
   }
 }
 
-function setCount(player: Player, item: string, count: number): void {
+export function setCount(player: Player, item: string, count: number): void {
   if (count <= 0) player.inventory.delete(item);
   else player.inventory.set(item, count);
 }

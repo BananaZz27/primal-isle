@@ -42,10 +42,20 @@ export const NodeState = schema({
 });
 export type NodeState = SchemaType<typeof NodeState>;
 
+/** สิ่งที่ผู้เล่นวางไว้บนพื้น (ตอนนี้มีแค่กองไฟ) */
+export const Structure = schema({
+  kind: t.string(),
+  tx: t.uint16(),
+  ty: t.uint16(),
+});
+export type Structure = SchemaType<typeof Structure>;
+
 export const WorldState = schema({
   seed: t.uint32(),
   players: t.map(Player),
   /** key = id ทรัพยากร (ลำดับใน generateDecor) เป็นข้อความ */
   nodes: t.map(NodeState),
+  /** key = เลขลำดับที่วาง (ข้อความ) */
+  structures: t.map(Structure),
 });
 export type WorldState = SchemaType<typeof WorldState>;

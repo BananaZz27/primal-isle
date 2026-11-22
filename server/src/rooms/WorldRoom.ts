@@ -13,6 +13,7 @@ import {
 import { MoveInput, Player, WorldState } from "./schema/WorldState.js";
 import { StepBudget } from "./stepBudget.js";
 import { SurvivalSystem } from "./survivalSystem.js";
+import { CraftingSystem } from "./craftingSystem.js";
 
 /** เวลาที่รอผู้เล่นที่เน็ตหลุดให้ต่อกลับมา (วินาที) */
 export const RECONNECT_SECONDS = 20;
@@ -42,6 +43,7 @@ export class WorldRoom extends Room<{ state: WorldState; input: MoveInput }> {
   private joinCount = 0;
   private budget = new StepBudget();
   private survival!: SurvivalSystem;
+  private crafting!: CraftingSystem;
 
   /**
    * บัฟเฟอร์ input ต่อผู้เล่น — sanitize บังคับค่าทุกช่องให้อยู่ใน -1..1 ตอนถอดรหัส (ไม่เชื่อข้อมูลจากเน็ต)
@@ -59,6 +61,9 @@ export class WorldRoom extends Room<{ state: WorldState; input: MoveInput }> {
     eat: (client: Client, msg: { item?: unknown } | undefined) =>
       this.withPlayer(client, (p) => this.survival.eat(p, msg?.item)),
     drink: (client: Client) => this.withPlayer(client, (p) => this.survival.drink(p)),
+    craft: (client: Client, msg: unknown) => this.withPlayer(client, (p) => this.crafting.craft(p, msg)),
+    place: (client: Client, msg: unknown) => this.withPlayer(client, (p) => this.crafting.place(p, msg)),
+    cook: (client: Client) => this.withPlayer(client, (p) => this.crafting.cook(p)),
   };
 
   onCreate(options: WorldCreateOptions = {}) {
@@ -68,7 +73,9 @@ export class WorldRoom extends Room<{ state: WorldState; input: MoveInput }> {
 
     this.state.seed = seed;
     this.map = generateWorld(seed);
-    this.survival = new SurvivalSystem(this.state, this.map, generateDecor(this.map));
+    const decor = generateDecor(this.map);
+    this.survival = new SurvivalSystem(this.state, this.map, decor);
+    this.crafting = new CraftingSystem(this.state, this.map, decor);
     this.setFixedTimestep((ctx) => this.step(ctx), TICK_RATE);
   }
 
