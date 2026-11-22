@@ -295,15 +295,13 @@ input {
 }
 
 /* ---------- หน้าคราฟต์ ---------- */
+/* ปุ่ม 🔨 อยู่ในแถวกระเป๋า (ช่องสุดท้าย) จึงไม่ทับช่องของ */
 .craft-toggle {
-  position: absolute;
-  bottom: max(8px, env(safe-area-inset-bottom));
-  left: calc(50% + 150px);
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   padding: 0;
-  font-size: 26px;
-  border-radius: 12px;
+  font-size: 24px;
+  border-radius: 8px;
 }
 .craft {
   position: absolute;
@@ -311,7 +309,7 @@ input {
   left: 50%;
   transform: translateX(-50%);
   width: min(380px, 94vw);
-  max-height: calc(100vh - 110px);
+  max-height: calc(100dvh - 110px);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -365,4 +363,25 @@ input {
 }
 canvas.icon {
   image-rendering: pixelated;
+}
+
+/* จอเล็ก (มือถือแนวนอน): ย่อช่องกระเป๋า ให้ 8 ช่อง + 🔨 ไม่ชนปุ่ม ✋ */
+@media (max-width: 720px) {
+  .slot,
+  .craft-toggle {
+    width: 38px;
+    height: 38px;
+  }
+  .slot .icon {
+    width: 26px;
+    height: 26px;
+  }
+  .inventory {
+    gap: 4px;
+    padding: 4px;
+  }
+  .craft {
+    bottom: 60px;
+    max-height: calc(100dvh - 90px);
+  }
 }

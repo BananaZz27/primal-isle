@@ -159,6 +159,17 @@ describe("crafting", () => {
     expect(p.inventory.get("roast")).toBe(1);
   });
 
+  it("cooking with 99 roast keeps the berry (no silent loss)", async () => {
+    const { p, send } = await setup({ campfire: 1 });
+    const t = freeTile();
+    Object.assign(p, centre(t.tx, t.ty));
+    await send("place", { item: "campfire" });
+    p.inventory.set("berry", 3);
+    p.inventory.set("roast", BALANCE.stackMax);
+    await send("cook", {});
+    expect(p.inventory.get("berry")).toBe(3);
+  });
+
   it("eating roast gives more food than a berry", async () => {
     const { p, send } = await setup({ roast: 1 });
     p.hunger = 10;
@@ -167,3 +178,4 @@ describe("crafting", () => {
     expect(p.inventory.get("roast")).toBeUndefined();
   });
 });
+

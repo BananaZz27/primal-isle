@@ -22,7 +22,7 @@ export interface CraftCheck {
   ok: boolean;
   /** ของที่ยังขาด → ขาดอีกกี่ชิ้น */
   missing: Partial<Record<ItemId, number>>;
-  reason?: "missing" | "owned";
+  reason?: "missing" | "owned" | "full";
 }
 
 /**
@@ -32,6 +32,8 @@ export interface CraftCheck {
 export function craftCheck(has: (item: ItemId) => number, id: RecipeId): CraftCheck {
   const product = id as ItemId;
   if (TOOLS.includes(product) && has(product) > 0) return { ok: false, missing: {}, reason: "owned" };
+  // ของที่จะได้เต็ม stack แล้ว → ห้ามทำ ไม่งั้นเสียวัตถุดิบฟรี
+  if (has(product) >= BALANCE.stackMax) return { ok: false, missing: {}, reason: "full" };
 
   const missing: Partial<Record<ItemId, number>> = {};
   for (const [item, need] of Object.entries(recipeCost(id)) as [ItemId, number][]) {

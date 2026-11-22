@@ -64,6 +64,7 @@ export class CraftingSystem {
   cook(player: Player): void {
     const berries = player.inventory.get("berry") ?? 0;
     if (berries <= 0) return;
+    if ((player.inventory.get("roast") ?? 0) >= BALANCE.stackMax) return; // เต็มแล้ว ไม่เผาผลไม้ทิ้ง
     const nearFire = [...this.state.structures.values()].some(
       (s) => s.kind === "campfire" && inReach(player.x, player.y, s.tx, s.ty),
     );

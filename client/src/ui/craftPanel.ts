@@ -27,12 +27,13 @@ export function costChips(has: (item: ItemId) => number, id: RecipeId): CostChip
  * แต่ละสูตรแสดงไอคอน ชื่อ คำอธิบาย ของที่ต้องใช้ (สีแดง = ไม่พอ) และปุ่ม "ทำ"
  */
 export class CraftPanel {
-  private toggle = el("button", { className: "panel craft-toggle", text: "🔨" });
+  private toggle = el("button", { className: "craft-toggle", text: "🔨" });
   private root = el("div", { className: "panel craft" });
   private rows = new Map<RecipeId, { chips: HTMLElement; button: HTMLButtonElement }>();
   private lastPlayer: Player | null = null;
 
-  constructor(onCraft: (recipe: RecipeId) => void) {
+  /** mount = ที่วางปุ่ม 🔨 (แถวกระเป๋า) */
+  constructor(mount: HTMLElement, onCraft: (recipe: RecipeId) => void) {
     this.toggle.title = "คราฟต์";
     this.toggle.addEventListener("click", () => this.setOpen(this.root.hidden));
     this.root.hidden = true;
@@ -56,7 +57,8 @@ export class CraftPanel {
       );
       this.rows.set(id, { chips, button });
     }
-    uiRoot().append(this.toggle, this.root);
+    mount.append(this.toggle);
+    uiRoot().append(this.root);
   }
 
   update(player: Player): void {
@@ -71,7 +73,7 @@ export class CraftPanel {
       );
       const check = craftCheck(has, id);
       row.button.disabled = !check.ok;
-      row.button.textContent = check.reason === "owned" ? "มีแล้ว" : "ทำ";
+      row.button.textContent = check.reason === "owned" ? "มีแล้ว" : check.reason === "full" ? "เต็ม" : "ทำ";
     }
   }
 

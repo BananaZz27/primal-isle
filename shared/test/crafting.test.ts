@@ -51,3 +51,12 @@ describe("gatherYield", () => {
     expect(gatherYield("berry", bag({ axe: 1, hammer: 1 }))).toBe(1);
   });
 });
+
+describe("full stacks", () => {
+  it("cannot craft when the product stack is already full (would waste materials)", () =>
+    expect(craftCheck(bag({ wood: 9, stone: 9, campfire: BALANCE.stackMax }), "campfire")).toEqual({
+      ok: false,
+      missing: {},
+      reason: "full",
+    }));
+});

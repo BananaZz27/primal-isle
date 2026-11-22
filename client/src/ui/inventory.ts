@@ -37,6 +37,11 @@ export class InventoryHud {
     uiRoot().append(this.root);
   }
 
+  /** แถวกระเป๋า — ใช้วางปุ่มอื่น (เช่น 🔨) ต่อท้ายในแถวเดียวกัน จะได้ไม่ทับช่องของ */
+  get element(): HTMLElement {
+    return this.root;
+  }
+
   update(player: Player): void {
     for (const id of ITEM_IDS) {
       const n = player.inventory.get(id) ?? 0;

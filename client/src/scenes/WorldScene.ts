@@ -86,7 +86,7 @@ export class WorldScene extends Phaser.Scene {
     this.inventoryHud = new InventoryHud((item, action) =>
       action === "eat" ? this.room.send("eat", { item }) : this.room.send("place", { item }),
     );
-    this.craftPanel = new CraftPanel((recipe) => this.room.send("craft", { recipe }));
+    this.craftPanel = new CraftPanel(this.inventoryHud.element, (recipe) => this.room.send("craft", { recipe }));
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       structures.destroy();
       this.craftPanel.destroy();
