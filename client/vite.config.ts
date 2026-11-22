@@ -1,6 +1,6 @@
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
-import { PWA_MANIFEST } from "./src/pwa/manifest";
+import { PWA_MANIFEST } from "./src/pwa/manifest.ts";
 
 export default defineConfig({
   // host: true = เปิดให้มือถือใน Wi-Fi เดียวกันเข้าถึงได้ผ่าน IP ของคอม
@@ -19,6 +19,9 @@ export default defineConfig({
         globPatterns: ["**/*.{js,css,html,png,webmanifest}"],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024, // Phaser ~1.5 MB
         cleanupOutdatedCaches: true,
+        // เชื่อว่า "ไม่เปลี่ยน" เฉพาะไฟล์ที่ Vite ใส่ hash ในชื่อ (index-AbCd1234.js)
+        // ภาพเกมใน public/assets ชื่อคงที่ → ต้องมี revision ไม่งั้นแก้ภาพแล้วมือถือไม่มีวันได้ภาพใหม่
+        dontCacheBustURLsMatching: /-[\w-]{8}\.\w+$/,
       },
     }),
   ],

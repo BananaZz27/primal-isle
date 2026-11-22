@@ -7,7 +7,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 # ติดตั้งเฉพาะที่เซิร์ฟเวอร์ใช้ (คัด package.json มาก่อน เพื่อให้ Docker จำชั้นนี้ไว้ ไม่ต้องติดตั้งใหม่ทุกครั้งที่แก้โค้ด)
-COPY package.json package-lock.json ./
+COPY package.json package-lock.json tsconfig.base.json ./
 COPY shared/package.json shared/
 COPY server/package.json server/
 COPY client/package.json client/

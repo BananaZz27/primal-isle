@@ -65,8 +65,9 @@
 ### 2B.3 ติดตั้งเกมบนเครื่อง
 เชื่อมต่อเครื่องจากคอม (Windows ใช้ PowerShell ได้เลย):
 ```bash
-ssh -i path\to\ssh-key.key ubuntu@140.238.1.23
+ssh -i "C:\Users\<ชื่อ>\.ssh\ssh-key.key" ubuntu@140.238.1.23
 ```
+(ย้ายไฟล์ key ไปไว้ในโฟลเดอร์ `.ssh` ของตัวเองก่อน · path มีเว้นวรรคต้องครอบด้วย `"..."`)
 แล้ววางคำสั่งเหล่านี้ทีละบล็อก (เปลี่ยน `140-238-1-23` เป็น IP ของโบ๊ท โดยใช้ `-` แทน `.`):
 ```bash
 # 1) ติดตั้ง Docker (โปรแกรมรันกล่องแอป) และ Caddy (ตัวทำ https/wss ให้อัตโนมัติ)
@@ -87,7 +88,7 @@ sudo docker run -d --name primal-isle --restart unless-stopped \
 
 # 5) ให้ Caddy ทำ https ให้ — ใช้ชื่อฟรีจาก sslip.io (แปลงชื่อเป็น IP ให้เอง ไม่ต้องซื้อโดเมน)
 echo '140-238-1-23.sslip.io {
-  reverse_proxy localhost:2567
+  reverse_proxy 127.0.0.1:2567
 }' | sudo tee /etc/caddy/Caddyfile
 sudo systemctl restart caddy
 ```
@@ -111,20 +112,21 @@ sudo systemctl restart caddy
 ## ขั้นที่ 4: ทดสอบกับเพื่อน + เพิ่มลงหน้าจอโฮม
 1. เปิดลิงก์เกม → ใส่ชื่อ → **สร้างโลกใหม่** (ถ้าใช้ Render แล้วเซิร์ฟเวอร์หลับอยู่ จะขึ้น "กำลังเชื่อมต่อ…" ราว 1 นาที)
 2. กด **📋 คัดลอกลิงก์เชิญ** ส่งให้เพื่อนทาง LINE — เพื่อนกดแล้วเข้าโลกเดียวกันได้เลย
-3. เพิ่มไอคอนบนมือถือ (เปิดจากไอคอนแล้วเต็มจอเหมือนแอป):
+3. เพิ่มไอคอนบนมือถือ (เปิดจากไอคอนแล้วไม่มีแถบเบราว์เซอร์ เหมือนแอป · iPhone ยังต้องหมุนจอเป็นแนวนอนเอง):
    - **Android (Chrome):** เมนู ⋮ → **ติดตั้งแอป / เพิ่มลงในหน้าจอหลัก**
    - **iPhone (Safari):** ปุ่มแชร์ ⬆️ → **เพิ่มไปยังหน้าจอโฮม**
 
 ## อัปเดตเกมในอนาคต
 - **หน้าเว็บ:** อัตโนมัติเมื่อ push เข้า main · มือถือที่ติดตั้งไว้จะได้เวอร์ชันใหม่ตอนเปิดครั้งถัดไป
-- **Render:** อัปเดตเองเมื่อ push เข้า main (`autoDeploy`) — ⚠️ โลกที่เปิดค้างอยู่จะหาย
+- **Render:** อัปเดตเองเมื่อ push เข้า main **เฉพาะเมื่อโค้ดเซิร์ฟเวอร์เปลี่ยน** (แก้เอกสารไม่ทำให้รีสตาร์ท) — ⚠️ ตอนอัปเดตโลกที่เปิดค้างอยู่จะหาย
 - **Oracle:** ssh เข้าเครื่องแล้ว
   ```bash
   cd primal-isle && git pull && sudo docker build -t primal-isle . \
-    && sudo docker rm -f primal-isle \
+    && sudo docker stop primal-isle && sudo docker rm primal-isle \
     && sudo docker run -d --name primal-isle --restart unless-stopped -p 127.0.0.1:2567:2567 -v primal-data:/data primal-isle
   ```
-  (`docker rm -f` ส่งสัญญาณปิด → เกมบันทึกโลกก่อนปิดเสมอ · เซฟอยู่ใน volume ไม่หาย)
+  (`docker stop` ส่งสัญญาณปิดแบบสุภาพแล้วรอ → เกมบันทึกโลกก่อนปิด · เซฟอยู่ใน volume ไม่หาย
+  ⚠️ อย่าใช้ `docker rm -f` เพราะเป็นการฆ่าทันที ไม่ทันบันทึก — อาจเสียการเล่นล่าสุดไม่เกิน 30 วินาที)
 
 ## แก้ปัญหาที่พบบ่อย
 | อาการ | สาเหตุ / วิธีแก้ |
@@ -134,6 +136,8 @@ sudo systemctl restart caddy
 | เข้าเกมแล้วขึ้น "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้" | เปิด `https://<ที่อยู่เซิร์ฟเวอร์>/health` ดู — ไม่ขึ้น `{"ok":true}` = เซิร์ฟเวอร์ยังไม่พร้อม (Render: ดู Logs · Oracle: `sudo docker logs primal-isle`) |
 | Render: เปิดครั้งแรกรอนาน | ปกติ — เซิร์ฟเวอร์ฟรีหลับอยู่ ต้องปลุก ~1 นาที |
 | Oracle: `/health` เปิดไม่ได้ | เช็กขั้น 2B.2 (Security List) และคำสั่ง iptables ในขั้น 2B.3 ข้อ 2 |
+| Windows: ssh ขึ้น `UNPROTECTED PRIVATE KEY FILE` / `permissions are too open` | ไฟล์ key เปิดให้คนอื่นอ่านได้ — ใน PowerShell รัน `icacls "C:\Users\<ชื่อ>\.ssh\ssh-key.key" /inheritance:r /grant:r "$($env:USERNAME):R"` แล้ว ssh ใหม่ |
+| Actions แดงที่ขั้น *configure-pages* | ยังไม่ได้ตั้ง Settings → Pages → Source เป็น **GitHub Actions** (ขั้นที่ 3 ข้อ 1) |
 | หน้าเว็บยังเป็นเวอร์ชันเก่า | ปิดแอป/แท็บแล้วเปิดใหม่ 1 ครั้ง (service worker โหลดเวอร์ชันใหม่ไว้แล้ว) |
 
 ## ความปลอดภัย

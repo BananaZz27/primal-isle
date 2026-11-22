@@ -30,3 +30,20 @@ describe("PWA manifest", () => {
     }
   });
 });
+
+// review: ภาพเกมใน public/assets ไม่มี hash ในชื่อไฟล์ — ถ้า service worker ไม่เก็บ revision ไว้
+// มือถือที่ติดตั้งแอปแล้วจะไม่มีวันได้ภาพใหม่ (เช่น แก้ tileset.png)
+describe("service worker precache", () => {
+  it("tracks a revision for game art whose file names have no hash", async () => {
+    const { build } = await import("vite");
+    const { mkdtempSync, readFileSync: read } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const outDir = mkdtempSync(join(tmpdir(), "primal-pwa-"));
+    await build({ configFile: join(__dirname, "..", "vite.config.ts"), root: join(__dirname, ".."), mode: "production", logLevel: "silent", build: { outDir, emptyOutDir: true } });
+    const sw = read(join(outDir, "sw.js"), "utf8");
+    // sw.js อาจย่อ (url:"…") หรือไม่ย่อ ("url": "…") แล้วแต่โหมด — รับทั้งสองแบบ
+    const art = [...sw.matchAll(/"?url"?:\s*"(assets\/ninja-adventure\/[^"]+)",\s*"?revision"?:\s*(null|"[^"]+")/g)];
+    expect(art.length).toBeGreaterThan(5);
+    for (const [, url, rev] of art) expect(rev, url).not.toBe("null");
+  }, 60_000);
+});
