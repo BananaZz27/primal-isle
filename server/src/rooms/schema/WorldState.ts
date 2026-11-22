@@ -80,6 +80,21 @@ export const Dino = schema({
 });
 export type Dino = SchemaType<typeof Dino>;
 
+/** กล่องเสบียงจากโลกปัจจุบัน (ของข้างในสุ่มตอนเปิด ไม่ส่งล่วงหน้า) */
+export const Crate = schema({
+  tx: t.uint16(),
+  ty: t.uint16(),
+  /** เวลาของห้อง (ms) ที่กล่องจะหายเอง */
+  expiresAt: t.number(),
+});
+export type Crate = SchemaType<typeof Crate>;
+
+/** ของในกล่องเก็บของ 1 ใบ (key = key ของสิ่งก่อสร้าง) — ทุกคนในโลกใช้ร่วมกัน */
+export const ChestState = schema({
+  items: t.map("uint8"),
+});
+export type ChestState = SchemaType<typeof ChestState>;
+
 export const WorldState = schema({
   seed: t.uint32(),
   players: t.map(Player),
@@ -91,5 +106,11 @@ export const WorldState = schema({
   drops: t.map(Drop),
   /** key = เลขลำดับ (ข้อความ) */
   dinos: t.map(Dino),
+  /** วินาทีของวัน 0..dayLengthSec (อัปเดตทุก 1 วิ) — client คำนวณความมืดเอง */
+  clock: t.uint16(),
+  /** key = เลขลำดับ (ข้อความ) */
+  crates: t.map(Crate),
+  /** key = key ของสิ่งก่อสร้างชนิด chest */
+  chests: t.map(ChestState),
 });
 export type WorldState = SchemaType<typeof WorldState>;

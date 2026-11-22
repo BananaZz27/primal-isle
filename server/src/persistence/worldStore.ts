@@ -2,21 +2,26 @@ import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { isWorldCode } from "@primal/shared";
 import type { SavedDino } from "../rooms/dinoSystem.js";
+import type { SavedCrate } from "../rooms/crateSystem.js";
 
 /** ข้อมูลโลกที่บันทึกลงไฟล์ (เวลาเก็บเป็น "อีกกี่ ms" เพราะนาฬิกาห้องเริ่มนับใหม่ทุกครั้งที่เปิด) */
 export interface WorldSave {
-  /** 1 = ขั้นที่ 5 (ไม่มีไดโน) · 2 = ขั้นที่ 6 */
-  version: 1 | 2;
+  /** 1 = ขั้นที่ 5 (ไม่มีไดโน) · 2 = ขั้นที่ 6 · 3 = ขั้นที่ 7 (เวลา กล่องเสบียง ของในกล่อง) */
+  version: 1 | 2 | 3;
   code: string;
   seed: number;
   savedAt: number;
   nodes: { id: string; hp: number; regrowInMs: number }[];
-  structures: { kind: string; tx: number; ty: number; owner: string }[];
+  /** items = ของในกล่องเก็บของ (เฉพาะ chest) */
+  structures: { kind: string; tx: number; ty: number; owner: string; items?: Record<string, number> }[];
   drops: { tx: number; ty: number; expiresInMs: number; items: Record<string, number> }[];
   /** key = token ของผู้เล่น */
   players: Record<string, SavedPlayer>;
   /** ไม่มี (ไฟล์ version 1) = เกิดไดโนใหม่ตอนเปิด */
   dinos?: SavedDino[];
+  /** ไม่มี (ไฟล์ version 1–2) = ไม่มีกล่องเสบียง / เริ่มเช้า */
+  crates?: SavedCrate[];
+  clock?: number;
 }
 
 export interface SavedPlayer {
@@ -41,13 +46,20 @@ const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object
 
 /** ไฟล์มีโครงตรงตามที่ห้องจะอ่านไหม (ไฟล์ที่แก้มือ/บั๊กในอนาคต ห้ามทำห้องพังกลางการโหลด) */
 function isWorldSave(d: unknown, code: string): d is WorldSave {
-  if (!isObj(d) || (d.version !== 1 && d.version !== 2) || d.code !== code || !isNum(d.seed)) return false;
-  const { nodes, structures, drops, players, dinos } = d;
+  if (!isObj(d) || (d.version !== 1 && d.version !== 2 && d.version !== 3) || d.code !== code || !isNum(d.seed)) return false;
+  const { nodes, structures, drops, players, dinos, crates, clock } = d;
+  if (clock !== undefined && !isNum(clock)) return false;
+  if (crates !== undefined && !(Array.isArray(crates) && crates.every((c) => isObj(c) && isNum(c.tx) && isNum(c.ty) && isNum(c.expiresInMs))))
+    return false;
   if (dinos !== undefined && !(Array.isArray(dinos) && dinos.every(isSavedDino))) return false;
   if (!Array.isArray(nodes) || !Array.isArray(structures) || !Array.isArray(drops) || !isObj(players)) return false;
   return (
     nodes.every((n) => isObj(n) && typeof n.id === "string" && isNum(n.hp) && isNum(n.regrowInMs)) &&
-    structures.every((s) => isObj(s) && typeof s.kind === "string" && isNum(s.tx) && isNum(s.ty) && typeof s.owner === "string") &&
+    structures.every(
+      (s) =>
+        isObj(s) && typeof s.kind === "string" && isNum(s.tx) && isNum(s.ty) && typeof s.owner === "string" &&
+        (s.items === undefined || (isObj(s.items) && Object.values(s.items).every(isNum))),
+    ) &&
     drops.every((x) => isObj(x) && isNum(x.tx) && isNum(x.ty) && isNum(x.expiresInMs) && isObj(x.items)) &&
     Object.values(players).every(
       (p) => isObj(p) && isNum(p.x) && isNum(p.y) && isNum(p.health) && isNum(p.hunger) && isNum(p.thirst) && isNum(p.colorIndex) && isObj(p.inventory),

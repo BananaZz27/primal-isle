@@ -235,5 +235,6 @@
       "weight": 2
     }
   ],
-  "chestKinds": 12
+  "chestKinds": 12,
+  "dayStartSec": 60
 }

@@ -42,6 +42,8 @@ export interface DinoHooks {
   tokenOf(player: Player): string;
   /** ผู้เล่นที่ออนไลน์ด้วย token นี้ */
   playerByToken(token: string): Player | null;
+  /** กลางคืนไหม (แร็พเตอร์ไล่ไกลขึ้น) */
+  night(): boolean;
   /** ใช้คูลดาวน์การตีร่วมกับการเก็บของ: พร้อมไหม / บันทึกว่าตีแล้ว */
   ready(sessionId: string, now: number): boolean;
   acted(sessionId: string, now: number): void;
@@ -162,6 +164,7 @@ export class DinoSystem {
       .filter(([, d]) => isDinoKind(d.kind))
       .map(([id, d]) => ({ id, x: d.x, y: d.y, half: dinoDef(d.kind as DinoKind).half, tamed: this.owners.has(id) }));
 
+    const aggroMul = this.hooks.night() ? BALANCE.nightAggroMul : 1;
     for (const [key, dino] of [...this.state.dinos.entries()]) {
       const brain = this.brains.get(key);
       if (!brain || this.frozen.has(key) || !this.state.dinos.has(key)) continue;
@@ -175,6 +178,7 @@ export class DinoSystem {
         dinos: dinos.filter((d) => d.id !== key),
         owner: owner ? { x: owner.x, y: owner.y } : null,
         ownerFoe: foe && foe.ref.id !== key ? foe.ref : null,
+        aggroMul,
       };
       const intent = think(brain, view, now, this.rand);
       if (intent.speed > 0) {
@@ -187,6 +191,14 @@ export class DinoSystem {
       }
       dino.mood = brain.mode === "flee" ? 1 : brain.mode === "chase" ? 2 : 0;
       if (intent.bite) this.bite(key, brain, intent.bite, now);
+    }
+  }
+
+  /** เจ้าของกลับมาด้วยชื่อใหม่ → ป้ายบนไดโนของเขาเปลี่ยนตาม */
+  renameOwner(token: string, name: string): void {
+    for (const [key, t] of this.owners) {
+      const d = this.state.dinos.get(key);
+      if (t === token && d) d.owner = name;
     }
   }
 

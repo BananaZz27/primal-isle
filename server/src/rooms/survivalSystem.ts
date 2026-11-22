@@ -1,7 +1,8 @@
 import {
   BALANCE,
+  CONSUMABLES,
   dinoDef,
-  FOOD,
+  isConsumable,
   hitboxTouches,
   isDinoKind,
   findSpawn,
@@ -85,13 +86,17 @@ export class SurvivalSystem {
     this.lastGather.set(sessionId, now);
   }
 
+  /** กิน/ดื่ม/ใช้ของ 1 ชิ้น (อาหาร น้ำขวด ผ้าพันแผล) ตามตาราง CONSUMABLES */
   eat(player: Player, item: unknown): void {
-    if (typeof item !== "string" || !Object.prototype.hasOwnProperty.call(FOOD, item)) return;
-    const food = FOOD[item as ItemId]!;
+    if (!isConsumable(item)) return;
+    const effect = CONSUMABLES[item]!;
     const have = player.inventory.get(item) ?? 0;
     if (have <= 0) return;
     setCount(player, item, have - 1);
-    player.hunger = Math.min(BALANCE.statMax, player.hunger + food);
+    const max = BALANCE.statMax;
+    if (effect.hunger) player.hunger = Math.min(max, player.hunger + effect.hunger);
+    if (effect.thirst) player.thirst = Math.min(max, player.thirst + effect.thirst);
+    if (effect.health) player.health = Math.min(max, player.health + effect.health);
   }
 
   drink(player: Player): void {

@@ -1,5 +1,6 @@
 import type { WorldSave, SavedPlayer } from "./worldStore.js";
 import type { SavedDino } from "../rooms/dinoSystem.js";
+import type { SavedCrate } from "../rooms/crateSystem.js";
 import type { Player, Structure, WorldState } from "../rooms/schema/WorldState.js";
 
 /** ค่าที่ต้องจำของผู้เล่นหนึ่งคน */
@@ -24,14 +25,21 @@ export function snapshotWorld(
   /** เจ้าของของสิ่งก่อสร้าง (token) — ไม่ได้อยู่ใน state */
   ownerOf: (s: Structure) => string,
   dinos: SavedDino[],
+  crates: SavedCrate[],
+  clock: number,
+  /** ของในกล่องเก็บของ ตาม key ของสิ่งก่อสร้าง */
+  chestItems: (key: string) => Record<string, number> | undefined,
 ): WorldSave {
   return {
-    version: 2,
+    version: 3,
     code,
     seed: state.seed,
     savedAt: Date.now(),
     nodes: [...state.nodes.entries()].map(([id, n]) => ({ id, hp: n.hp, regrowInMs: Math.max(0, n.regrowAt - now) })),
-    structures: [...state.structures.values()].map((s) => ({ kind: s.kind, tx: s.tx, ty: s.ty, owner: ownerOf(s) })),
+    structures: [...state.structures.entries()].map(([key, s]) => {
+      const items = chestItems(key);
+      return { kind: s.kind, tx: s.tx, ty: s.ty, owner: ownerOf(s), ...(items ? { items } : {}) };
+    }),
     drops: [...state.drops.values()].map((d) => ({
       tx: d.tx,
       ty: d.ty,
@@ -40,5 +48,7 @@ export function snapshotWorld(
     })),
     players,
     dinos,
+    crates,
+    clock,
   };
 }

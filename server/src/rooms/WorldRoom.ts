@@ -1,9 +1,11 @@
 import { Room, Client, CloseCode, matchMaker, type Deferred, type StepContext } from "colyseus";
 import {
+  BALANCE,
   findSpawn,
   freshStats,
   generateDecor,
   generateWorld,
+  isNight,
   isToken,
   isWorldCode,
   newWorldCode,
@@ -21,6 +23,7 @@ import { SurvivalSystem } from "./survivalSystem.js";
 import { CraftingSystem } from "./craftingSystem.js";
 import { BuildingSystem } from "./buildingSystem.js";
 import { DinoSystem } from "./dinoSystem.js";
+import { CrateSystem } from "./crateSystem.js";
 
 /** เวลาที่รอผู้เล่นที่เน็ตหลุดให้ต่อกลับมา (วินาที) */
 export const RECONNECT_SECONDS = 20;
@@ -60,6 +63,9 @@ export class WorldRoom extends Room<{ state: WorldState; input: MoveInput }> {
   private crafting!: CraftingSystem;
   private building!: BuildingSystem;
   private dinos!: DinoSystem;
+  private crates!: CrateSystem;
+  /** เวลาของวัน (วินาที, ทศนิยม) — state.clock ซิงก์แค่ส่วนจำนวนเต็ม */
+  private dayClock: number = BALANCE.dayStartSec;
   /** ผู้เล่น → id เจ้าของ (token; ไม่มี token = ผู้เล่นชั่วคราว) */
   private owners = new Map<Player, string>();
   /** ค่าที่จำไว้ของผู้เล่นที่ไม่ได้ออนไลน์ (key = token) */
@@ -96,6 +102,8 @@ export class WorldRoom extends Room<{ state: WorldState; input: MoveInput }> {
     cook: (client: Client) => this.withPlayer(client, (p) => this.crafting.cook(p)),
     attack: (client: Client, msg: unknown) =>
       this.withPlayer(client, (p) => this.dinos.attack(client.sessionId, p, msg, this.clock.currentTime)),
+    open: (client: Client, msg: unknown) => this.withPlayer(client, (p) => this.crates.open(p, msg, this.clock.currentTime)),
+    chest: (client: Client, msg: unknown) => this.withPlayer(client, (p) => this.building.chest(p, msg)),
     feed: (client: Client, msg: unknown) =>
       this.withPlayer(client, (p) => this.dinos.feed(client.sessionId, p, msg, this.clock.currentTime)),
   };
@@ -144,11 +152,20 @@ export class WorldRoom extends Room<{ state: WorldState; input: MoveInput }> {
           const session = this.sessionOfToken(token);
           return session === null ? null : (this.state.players.get(session) ?? null);
         },
+        night: () => isNight(this.dayClock),
         ready: (sessionId, now) => this.survival.ready(sessionId, now),
         acted: (sessionId, now) => this.survival.acted(sessionId, now),
       },
     );
+    // กล่องเสบียงห้ามตกทับต้นไม้/หิน/สิ่งก่อสร้าง
+    this.crates = new CrateSystem(
+      this.state,
+      this.map,
+      (tx, ty) => this.solid(tx, ty) || this.building.structureAt(tx, ty),
+      this.clock.currentTime,
+    );
     if (save) this.restore(save);
+    this.state.clock = Math.floor(this.dayClock);
     if (process.env.WILD_DINOS !== "0") this.dinos.populate(this.clock.currentTime);
 
     this.setFixedTimestep((ctx) => this.step(ctx), TICK_RATE);
@@ -187,6 +204,7 @@ export class WorldRoom extends Room<{ state: WorldState; input: MoveInput }> {
     });
     for (const [item, n] of Object.entries(saved?.inventory ?? {})) player.inventory.set(item, n);
     this.owners.set(player, token);
+    this.dinos.renameOwner(token, player.name);
     this.state.players.set(client.sessionId, player);
   }
 
@@ -218,6 +236,7 @@ export class WorldRoom extends Room<{ state: WorldState; input: MoveInput }> {
     this.survival.forget(oldSession);
     player.name = sanitizeName(options?.name);
     this.state.players.set(newSession, player);
+    this.dinos.renameOwner(this.owners.get(player) ?? "", player.name);
     const waiting = this.waitingReconnect.get(oldSession);
     this.waitingReconnect.delete(oldSession);
     waiting?.reject(); // ตัวเก่าจะ onLeave ทันที แต่ไม่มีตัวละครให้ลบแล้ว
@@ -247,7 +266,11 @@ export class WorldRoom extends Room<{ state: WorldState; input: MoveInput }> {
       for (const input of batch) stepPlayer(player, input, ctx.dt, this.map, this.solid);
       this.budget.spend(sessionId, batch.length);
     }
+    this.dayClock = (this.dayClock + ctx.dt) % BALANCE.dayLengthSec;
+    const sec = Math.floor(this.dayClock);
+    if (this.state.clock !== sec) this.state.clock = sec; // ส่งแค่ทุก 1 วิ ไม่ใช่ทุก tick
     this.dinos.tick(ctx.dt, this.clock.currentTime);
+    this.crates.tick(this.clock.currentTime);
     this.survival.tick(ctx.dt, this.clock.currentTime);
     this.building.tick(this.clock.currentTime);
   }
@@ -272,6 +295,9 @@ export class WorldRoom extends Room<{ state: WorldState; input: MoveInput }> {
           players,
           (s) => this.building.structureOwner(s),
           this.dinos.snapshot(),
+          this.crates.snapshot(this.clock.currentTime),
+          this.dayClock,
+          (key) => this.building.chestItems(key),
         ),
       );
     } catch (err) {
@@ -283,7 +309,7 @@ export class WorldRoom extends Room<{ state: WorldState; input: MoveInput }> {
   private restore(save: WorldSave) {
     const now = this.clock.currentTime;
     for (const n of save.nodes) this.state.nodes.set(n.id, new NodeState({ hp: n.hp, regrowAt: now + n.regrowInMs }));
-    for (const s of save.structures) this.building.restore(s.kind, s.tx, s.ty, s.owner);
+    for (const s of save.structures) this.building.restore(s.kind, s.tx, s.ty, s.owner, s.items);
     save.drops.forEach((d, i) => {
       const drop = new Drop({ tx: d.tx, ty: d.ty, expiresAt: now + d.expiresInMs });
       for (const [item, n] of Object.entries(d.items)) drop.items.set(item, n);
@@ -291,6 +317,8 @@ export class WorldRoom extends Room<{ state: WorldState; input: MoveInput }> {
     });
     this.savedPlayers = { ...save.players };
     this.dinos.restore(save.dinos ?? [], now);
+    this.crates.restore(save.crates ?? [], now);
+    if (typeof save.clock === "number") this.dayClock = save.clock % BALANCE.dayLengthSec;
   }
 
   /** เรียกงานกับผู้เล่นของ client นี้ (ถ้ายังอยู่ในห้อง) */
