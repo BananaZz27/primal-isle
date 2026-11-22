@@ -1,9 +1,11 @@
 import Phaser from "phaser";
-import { TILE_SIZE } from "@primal/shared";
+import { DINO_KINDS, TILE_SIZE } from "@primal/shared";
 import { ASSET_ROOT, SURVIVOR_IDS, TEX, TREE_RECTS } from "../art/ninjaAtlas";
 import { CAMPFIRE_FRAMES, CAMPFIRE_PALETTE } from "../art/campfire";
 import { BAG, BED, BUILD_PALETTE, DOOR, WALL } from "../art/structures";
 import { paintTexture } from "../art/paint";
+import { DINO_FRAMES, DINO_PALETTE } from "../art/dinos";
+import { dinoWalkAnim } from "../render/dinos";
 import { CAMPFIRE_ANIM } from "../render/structures";
 import { registerSurvivorAnims } from "../render/survivorAnims";
 import { showLoadError } from "../ui/loadError";
@@ -54,6 +56,23 @@ export class BootScene extends Phaser.Scene {
     CAMPFIRE_FRAMES.forEach((_, i) => fire.add(i, 0, i * TILE_SIZE, 0, TILE_SIZE, TILE_SIZE));
     if (!this.anims.exists(CAMPFIRE_ANIM)) {
       this.anims.create({ key: CAMPFIRE_ANIM, frames: [{ key: TEX.campfire, frame: 0 }, { key: TEX.campfire, frame: 1 }], frameRate: 5, repeat: -1 });
+    }
+    // ไดโนวาดเอง: ชนิดละ 2 เฟรม (ขาสลับ) → animation เดิน
+    for (const kind of DINO_KINDS) {
+      const frames = DINO_FRAMES[kind];
+      const w = frames[0][0].length;
+      const h = frames[0].length;
+      paintTexture(this, TEX.dino(kind), frames, DINO_PALETTE);
+      const tex = this.textures.get(TEX.dino(kind));
+      frames.forEach((_, i) => tex.add(i, 0, i * w, 0, w, h));
+      if (!this.anims.exists(dinoWalkAnim(kind))) {
+        this.anims.create({
+          key: dinoWalkAnim(kind),
+          frames: [{ key: TEX.dino(kind), frame: 0 }, { key: TEX.dino(kind), frame: 1 }],
+          frameRate: 6,
+          repeat: -1,
+        });
+      }
     }
     this.scene.start("Menu");
   }

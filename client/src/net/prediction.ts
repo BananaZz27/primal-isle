@@ -1,6 +1,6 @@
 import { Predict } from "@colyseus/sdk/predict";
 import { stepPlayer, type SolidFn, type WorldMap } from "@primal/shared";
-import type { MoveInput, Player } from "@primal/server/schema";
+import type { Dino, MoveInput, Player } from "@primal/server/schema";
 import type { MoveDir } from "../input/joystick";
 import type { WorldRoom } from "./connection";
 import { clampSteps } from "./frameSteps";
@@ -8,8 +8,8 @@ import { clampSteps } from "./frameSteps";
 export interface Prediction {
   /** เรียกทุกเฟรม: ส่ง input ตามจำนวน step ที่ถึงเวลา */
   tick(now: number, dir: MoveDir): void;
-  /** ตำแหน่งที่ควรวาด — ตัวเรา = ค่าที่ทำนาย, คนอื่น = ค่าที่เกลี่ยแล้ว */
-  pos(player: Player): { x: number; y: number };
+  /** ตำแหน่งที่ควรวาด — ตัวเรา = ค่าที่ทำนาย, คนอื่น/ไดโน = ค่าที่เกลี่ยแล้ว */
+  pos(entity: Player | Dino): { x: number; y: number };
 }
 
 /**
@@ -20,6 +20,7 @@ export interface Prediction {
 export function startPrediction(room: WorldRoom, map: WorldMap, solid: SolidFn): Prediction {
   const predict = Predict.get(room as any);
   predict.attachAll("players", { mode: "lerp", fields: ["x", "y"], smoothMs: 65 });
+  predict.attachAll("dinos", { mode: "lerp", fields: ["x", "y"], smoothMs: 65 });
 
   const input = room.input<MoveInput>({ mode: "reliable" });
   const self = room.state.players.get(room.sessionId)!;
@@ -39,8 +40,8 @@ export function startPrediction(room: WorldRoom, map: WorldMap, solid: SolidFn):
         input.send();
       }
     },
-    pos(player) {
-      return { x: predict.value(player, "x"), y: predict.value(player, "y") };
+    pos(entity) {
+      return { x: predict.value(entity as Player, "x"), y: predict.value(entity as Player, "y") };
     },
   };
 }
