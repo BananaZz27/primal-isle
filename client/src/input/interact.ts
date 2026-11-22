@@ -2,11 +2,18 @@ import Phaser from "phaser";
 import { BALANCE, inReach, nodeDef, TILE_SIZE, touchesWater, type Decor, type WorldMap } from "@primal/shared";
 import { el, uiRoot } from "../ui/dom";
 import { RepeatGate } from "./repeatGate";
+import { nearestInReach } from "./building";
 
-export type Target = { kind: "node"; id: number } | { kind: "campfire" } | { kind: "water" } | null;
+export type Target =
+  | { kind: "drop"; key: string }
+  | { kind: "node"; id: number }
+  | { kind: "campfire" }
+  | { kind: "water" }
+  | null;
 
 /**
  * เลือกสิ่งที่จะโต้ตอบเมื่อกดปุ่ม ตามลำดับ:
+ * 0) ถุงของที่ตกอยู่ในระยะ (เก็บคืนก่อนอย่างอื่น)
  * 1) ทรัพยากรที่ใกล้ที่สุดในระยะเอื้อม (ที่ยังไม่หมด)
  * 2) กองไฟในระยะ — เฉพาะเมื่อมีผลไม้ให้ย่าง
  * 3) น้ำในระยะ = ดื่ม · ไม่มีอะไรเลย → null
@@ -19,7 +26,11 @@ export function pickTarget(
   isDepleted: (id: number) => boolean,
   campfires: { tx: number; ty: number }[] = [],
   hasBerry = false,
+  drops: { key: string; tx: number; ty: number }[] = [],
 ): Target {
+  const bag = nearestInReach(px, py, drops);
+  if (bag) return { kind: "drop", key: bag.key };
+
   let best: { id: number; dist: number } | null = null;
   decor.forEach((d, id) => {
     if (!nodeDef(d.kind) || isDepleted(id) || !inReach(px, py, d.tx, d.ty)) return;

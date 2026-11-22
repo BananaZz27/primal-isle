@@ -10,3 +10,4 @@ export * from "./movement/step";
 export * from "./rules/resources";
 export * from "./rules/survival";
 export * from "./rules/crafting";
+export * from "./rules/building";

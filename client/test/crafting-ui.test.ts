@@ -5,7 +5,9 @@ import { costChips } from "../src/ui/craftPanel";
 
 describe("labels", () => {
   it("every item has a Thai name", () => {
-    expect(ITEM_IDS.map(itemLabel)).toEqual(["ไม้", "หิน", "ผลไม้", "เส้นใย", "ขวานหิน", "ค้อนหิน", "กองไฟ", "ผลไม้ย่าง"]);
+    expect(ITEM_IDS.map(itemLabel)).toEqual([
+      "ไม้", "หิน", "ผลไม้", "เส้นใย", "ขวานหิน", "ค้อนหิน", "กองไฟ", "ผลไม้ย่าง", "กำแพงไม้", "ประตูไม้", "ที่นอน",
+    ]);
   });
   it("recipe names", () => expect(recipeLabel("campfire")).toBe("กองไฟ"));
 });

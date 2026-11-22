@@ -60,6 +60,11 @@ export class PlayerSprites {
     }
   }
 
+  /** ทิศที่ผู้เล่นคนนี้หันอยู่ (ใช้หาช่องหน้าตัวตอนวางสิ่งก่อสร้าง) */
+  facingOf(sessionId: string): Facing {
+    return this.views.get(sessionId)?.facing ?? "down";
+  }
+
   /** container ของผู้เล่นคนนี้ (ใช้ให้กล้องตาม) */
   get(sessionId: string): Phaser.GameObjects.Container | undefined {
     return this.views.get(sessionId)?.container;

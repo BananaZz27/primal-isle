@@ -4,11 +4,11 @@ import { BALANCE, craftCheck, FOOD, gatherYield, ITEM_IDS, RECIPE_IDS, recipeCos
 const bag = (items: Partial<Record<ItemId, number>>) => (id: ItemId) => items[id] ?? 0;
 
 describe("items and recipes", () => {
-  it("knows all 8 items in bag order", () =>
-    expect([...ITEM_IDS]).toEqual(["wood", "stone", "berry", "fiber", "axe", "hammer", "campfire", "roast"]));
+  it("knows all items in bag order", () =>
+    expect([...ITEM_IDS]).toEqual(["wood", "stone", "berry", "fiber", "axe", "hammer", "campfire", "roast", "wall", "door", "bed"]));
 
   it("recipes match the design table", () => {
-    expect([...RECIPE_IDS]).toEqual(["axe", "hammer", "campfire"]);
+    expect([...RECIPE_IDS]).toEqual(["axe", "hammer", "campfire", "wall", "door", "bed"]);
     expect(recipeCost("axe")).toEqual({ wood: 3, stone: 2, fiber: 2 });
     expect(recipeCost("hammer")).toEqual({ wood: 2, stone: 3, fiber: 2 });
     expect(recipeCost("campfire")).toEqual({ wood: 5, stone: 3 });

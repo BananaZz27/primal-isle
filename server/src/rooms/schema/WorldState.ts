@@ -42,13 +42,26 @@ export const NodeState = schema({
 });
 export type NodeState = SchemaType<typeof NodeState>;
 
-/** สิ่งที่ผู้เล่นวางไว้บนพื้น (ตอนนี้มีแค่กองไฟ) */
+/**
+ * สิ่งที่ผู้เล่นวางไว้บนพื้น (กองไฟ กำแพง ประตู ที่นอน)
+ * เจ้าของ (token) ไม่อยู่ในนี้ — เก็บฝั่งเซิร์ฟเวอร์ใน BuildingSystem เพราะ token คือกุญแจตัวละคร ห้ามส่งให้ client
+ */
 export const Structure = schema({
   kind: t.string(),
   tx: t.uint16(),
   ty: t.uint16(),
 });
 export type Structure = SchemaType<typeof Structure>;
+
+/** ถุงของที่ตกตอนผู้เล่นสลบ — ใครก็เก็บได้ */
+export const Drop = schema({
+  tx: t.uint16(),
+  ty: t.uint16(),
+  /** เวลาของห้อง (ms) ที่ถุงจะหายไปเอง */
+  expiresAt: t.number(),
+  items: t.map("uint8"),
+});
+export type Drop = SchemaType<typeof Drop>;
 
 export const WorldState = schema({
   seed: t.uint32(),
@@ -57,5 +70,7 @@ export const WorldState = schema({
   nodes: t.map(NodeState),
   /** key = เลขลำดับที่วาง (ข้อความ) */
   structures: t.map(Structure),
+  /** key = เลขลำดับ (ข้อความ) */
+  drops: t.map(Drop),
 });
 export type WorldState = SchemaType<typeof WorldState>;

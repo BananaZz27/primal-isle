@@ -10,9 +10,32 @@ import { Tile, tileAt, type WorldMap } from "../world/tiles";
 export const BALANCE = balanceJson;
 
 /** ของทุกชนิดในเกม: วัตถุดิบ 4 อย่าง + ของที่คราฟต์/ปรุงได้ */
-export type ItemId = "wood" | "stone" | "berry" | "fiber" | "axe" | "hammer" | "campfire" | "roast";
+export type ItemId =
+  | "wood"
+  | "stone"
+  | "berry"
+  | "fiber"
+  | "axe"
+  | "hammer"
+  | "campfire"
+  | "roast"
+  | "wall"
+  | "door"
+  | "bed";
 /** ลำดับนี้ = ลำดับช่องในกระเป๋า */
-export const ITEM_IDS: readonly ItemId[] = ["wood", "stone", "berry", "fiber", "axe", "hammer", "campfire", "roast"];
+export const ITEM_IDS: readonly ItemId[] = [
+  "wood",
+  "stone",
+  "berry",
+  "fiber",
+  "axe",
+  "hammer",
+  "campfire",
+  "roast",
+  "wall",
+  "door",
+  "bed",
+];
 
 export interface NodeDef {
   item: ItemId;

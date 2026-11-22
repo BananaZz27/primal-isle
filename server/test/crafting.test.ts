@@ -91,11 +91,11 @@ describe("crafting", () => {
     expect(p.inventory.get("wood")).toBe(BALANCE.toolYield);
   });
 
-  it("places a campfire where the player stands", async () => {
+  it("places a campfire on the tile next to the player", async () => {
     const { room, p, send } = await setup({ campfire: 2 });
     const t = freeTile();
-    Object.assign(p, centre(t.tx, t.ty));
-    await send("place", { item: "campfire" });
+    Object.assign(p, centre(t.tx - 1, t.ty));
+    await send("place", { item: "campfire", tx: t.tx, ty: t.ty });
     expect(p.inventory.get("campfire")).toBe(1);
     const placed = [...room.state.structures.values()];
     expect(placed.map((s) => ({ kind: s.kind, tx: s.tx, ty: s.ty }))).toEqual([{ kind: "campfire", ...t }]);
@@ -103,48 +103,48 @@ describe("crafting", () => {
 
   it("refuses to place on a resource, next to another campfire, without one, or past the limit", async () => {
     const { room, p, send } = await setup({ campfire: 5 });
-    const tree = decor.find((d) => d.kind === DecorKind.Tuft)!;
-    Object.assign(p, centre(tree.tx, tree.ty));
-    await send("place", { item: "campfire" });
+    const tuft = decor.find((d) => d.kind === DecorKind.Tuft)!;
+    Object.assign(p, centre(tuft.tx - 1, tuft.ty));
+    await send("place", { item: "campfire", tx: tuft.tx, ty: tuft.ty });
     expect(room.state.structures.size).toBe(0);
 
     const t = freeTile();
-    Object.assign(p, centre(t.tx, t.ty));
-    await send("place", { item: "campfire" });
-    Object.assign(p, centre(t.tx + 1, t.ty)); // ติดกองไฟแรก
-    await send("place", { item: "campfire" });
+    Object.assign(p, centre(t.tx - 1, t.ty));
+    await send("place", { item: "campfire", tx: t.tx, ty: t.ty });
+    Object.assign(p, centre(t.tx, t.ty + 1)); // ติดกองไฟแรก (ช่องขวาล่าง)
+    await send("place", { item: "campfire", tx: t.tx + 1, ty: t.ty + 1 });
     expect(room.state.structures.size).toBe(1);
     expect(p.inventory.get("campfire")).toBe(4);
 
-    await send("place", { item: "wood" });
+    await send("place", { item: "wood", tx: t.tx - 1, ty: t.ty - 1 });
     expect(room.state.structures.size).toBe(1);
 
     p.inventory.delete("campfire");
     const t2 = freeTile(500);
-    Object.assign(p, centre(t2.tx, t2.ty));
-    await send("place", { item: "campfire" });
+    Object.assign(p, centre(t2.tx - 1, t2.ty));
+    await send("place", { item: "campfire", tx: t2.tx, ty: t2.ty });
     expect(room.state.structures.size).toBe(1);
   });
 
-  it(`stops at ${BALANCE.maxStructures} campfires per world`, async () => {
+  it(`stops at ${BALANCE.maxCampfires} campfires per world`, async () => {
     const { room, p, send } = await setup({ campfire: 99 });
     // ลองวางมากกว่าขีดจำกัดเยอะๆ (บางช่องอาจติดกันจนถูกปฏิเสธ — ไม่เป็นไร)
     const total = countFree();
     const step = Math.max(3, Math.floor(total / 60));
     for (let k = 0; k < total; k += step) {
       const t = freeTile(k);
-      Object.assign(p, centre(t.tx, t.ty));
-      await send("place", { item: "campfire" });
+      Object.assign(p, centre(t.tx - 1, t.ty));
+      await send("place", { item: "campfire", tx: t.tx, ty: t.ty });
     }
-    expect(room.state.structures.size).toBe(BALANCE.maxStructures);
-    expect(p.inventory.get("campfire")).toBe(99 - BALANCE.maxStructures);
+    expect(room.state.structures.size).toBe(BALANCE.maxCampfires);
+    expect(p.inventory.get("campfire")).toBe(99 - BALANCE.maxCampfires);
   }, 20000); // ส่งข้อความ ~60 รอบ — เครื่อง CI ช้ากว่า จึงให้เวลามากกว่าค่าเริ่มต้น 5 วิ
 
   it("cooking next to a campfire turns a berry into roast; far away or no berry → nothing", async () => {
     const { p, send } = await setup({ campfire: 1, berry: 1 });
     const t = freeTile();
-    Object.assign(p, centre(t.tx, t.ty));
-    await send("place", { item: "campfire" });
+    Object.assign(p, centre(t.tx - 1, t.ty));
+    await send("place", { item: "campfire", tx: t.tx, ty: t.ty });
 
     Object.assign(p, centre(t.tx + 6, t.ty));
     await send("cook", {});
@@ -162,8 +162,8 @@ describe("crafting", () => {
   it("cooking with 99 roast keeps the berry (no silent loss)", async () => {
     const { p, send } = await setup({ campfire: 1 });
     const t = freeTile();
-    Object.assign(p, centre(t.tx, t.ty));
-    await send("place", { item: "campfire" });
+    Object.assign(p, centre(t.tx - 1, t.ty));
+    await send("place", { item: "campfire", tx: t.tx, ty: t.ty });
     p.inventory.set("berry", 3);
     p.inventory.set("roast", BALANCE.stackMax);
     await send("cook", {});
