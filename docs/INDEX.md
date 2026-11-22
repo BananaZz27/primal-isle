@@ -9,3 +9,4 @@
 - [ออกแบบขั้นที่ 5](superpowers/specs/2026-11-22-m5-base-save-design.md) · [แผน](superpowers/plans/2026-11-22-m5-base-save.md)
 - [ออกแบบขั้นที่ 6ก ไดโนเสาร์](superpowers/specs/2026-11-22-m6-dinos-design.md) · [แผน](superpowers/plans/2026-11-22-m6-dinos.md)
 - [ออกแบบขั้นที่ 6ข ขึ้นออนไลน์](superpowers/specs/2026-11-22-m6b-online-design.md) · [แผน](superpowers/plans/2026-11-22-m6b-online.md)
+- [คู่มือขึ้นออนไลน์ (DEPLOY)](DEPLOY.md) — Render / Oracle / GitHub Pages ทีละขั้น
