@@ -11,9 +11,48 @@
   "gatherCooldownMs": 350,
   "stackMax": 99,
   "nodes": {
-    "tree": { "item": "wood", "hits": 3, "regrowSec": 120, "solid": true },
-    "rock": { "item": "stone", "hits": 3, "regrowSec": 180, "solid": true },
-    "bush": { "item": "berry", "hits": 2, "regrowSec": 60, "solid": false },
-    "tuft": { "item": "fiber", "hits": 1, "regrowSec": 60, "solid": false }
+    "tree": {
+      "item": "wood",
+      "hits": 3,
+      "regrowSec": 120,
+      "solid": true
+    },
+    "rock": {
+      "item": "stone",
+      "hits": 3,
+      "regrowSec": 180,
+      "solid": true
+    },
+    "bush": {
+      "item": "berry",
+      "hits": 2,
+      "regrowSec": 60,
+      "solid": false
+    },
+    "tuft": {
+      "item": "fiber",
+      "hits": 1,
+      "regrowSec": 60,
+      "solid": false
+    }
+  },
+  "roastFood": 35,
+  "toolYield": 2,
+  "maxStructures": 30,
+  "recipes": {
+    "axe": {
+      "wood": 3,
+      "stone": 2,
+      "fiber": 2
+    },
+    "hammer": {
+      "wood": 2,
+      "stone": 3,
+      "fiber": 2
+    },
+    "campfire": {
+      "wood": 5,
+      "stone": 3
+    }
   }
 }
