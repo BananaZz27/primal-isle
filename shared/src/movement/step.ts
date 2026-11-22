@@ -21,14 +21,18 @@ const clamp1 = (v: number) => (v < -1 ? -1 : v > 1 ? 1 : v || 0);
 export type SolidFn = (tx: number, ty: number) => boolean;
 const NOTHING_SOLID: SolidFn = () => false;
 
-/** กล่องชน (hitbox) ที่ตำแหน่ง (x, y) ทับช่องที่เดินไม่ได้หรือไม่ — เช็กทั้ง 4 มุม */
-function blocked(map: WorldMap, x: number, y: number, solid: SolidFn): boolean {
-  const left = Math.floor((x - PLAYER_HALF) / TILE_SIZE);
-  const right = Math.floor((x + PLAYER_HALF) / TILE_SIZE);
-  const top = Math.floor((y - PLAYER_HALF) / TILE_SIZE);
-  const bottom = Math.floor((y + PLAYER_HALF) / TILE_SIZE);
-  const free = (tx: number, ty: number) => isWalkable(tileAt(map, tx, ty)) && !solid(tx, ty);
-  return !free(left, top) || !free(right, top) || !free(left, bottom) || !free(right, bottom);
+/**
+ * กล่องชน (hitbox) ครึ่งกว้าง half ที่ตำแหน่ง (x, y) ทับช่องที่เดินไม่ได้หรือไม่
+ * เช็กทุกช่องที่กล่องทับ (กล่องใหญ่กว่า 1 ช่อง เช่น ไดโนตัวโต ก็ไม่ลอดช่องแคบ)
+ */
+export function blocked(map: WorldMap, x: number, y: number, solid: SolidFn, half = PLAYER_HALF): boolean {
+  const left = Math.floor((x - half) / TILE_SIZE);
+  const right = Math.floor((x + half) / TILE_SIZE);
+  const top = Math.floor((y - half) / TILE_SIZE);
+  const bottom = Math.floor((y + half) / TILE_SIZE);
+  for (let ty = top; ty <= bottom; ty++)
+    for (let tx = left; tx <= right; tx++) if (!isWalkable(tileAt(map, tx, ty)) || solid(tx, ty)) return true;
+  return false;
 }
 
 /**
@@ -47,22 +51,47 @@ export function stepPlayer(
 ): void {
   let dirX = clamp1(input.moveX);
   let dirY = clamp1(input.moveY);
-
-  // เดินแนวทแยงต้องไม่เร็วกว่าเดินตรง
+  // กติกาเดิมของผู้เล่น (ห้ามเปลี่ยน: client ทำนายด้วยสูตรนี้): ทแยง = คูณ 1/√2 ทั้งสองแกน
   if (dirX !== 0 && dirY !== 0) {
     dirX *= Math.SQRT1_2;
     dirY *= Math.SQRT1_2;
   }
+  stepMover(entity, dirX, dirY, PLAYER_SPEED, PLAYER_HALF, dt, map, solid);
+}
 
-  let vx = dirX * PLAYER_SPEED;
-  let vy = dirY * PLAYER_SPEED;
+/**
+ * เดิน 1 step แบบทั่วไป (ผู้เล่นและไดโนใช้ตัวนี้): ทิศ dirX/dirY (-1..1), ความเร็ว speed px/s, กล่องชนครึ่งกว้าง half
+ * ทิศทแยงถูกย่อให้ไม่เร็วกว่าเดินตรง · ทิศที่ไม่ใช่ -1/0/1 (เช่น 0.6, -0.8 ของไดโน) ใช้ตามสัดส่วน
+ */
+export function stepMover(
+  entity: EntityState,
+  moveX: number,
+  moveY: number,
+  speed: number,
+  half: number,
+  dt: number,
+  map: WorldMap,
+  solid: SolidFn = NOTHING_SOLID,
+): void {
+  let dirX = clamp1(moveX);
+  let dirY = clamp1(moveY);
+
+  // ความยาวทิศเกิน 1 (เช่นทแยงเต็มแรง) → ย่อให้ไม่เร็วกว่าเดินตรง
+  const len = Math.hypot(dirX, dirY);
+  if (len > 1) {
+    dirX /= len;
+    dirY /= len;
+  }
+
+  let vx = dirX * speed;
+  let vy = dirY * speed;
 
   const nextX = entity.x + vx * dt;
-  if (vx !== 0 && !blocked(map, nextX, entity.y, solid)) entity.x = nextX;
+  if (vx !== 0 && !blocked(map, nextX, entity.y, solid, half)) entity.x = nextX;
   else vx = 0;
 
   const nextY = entity.y + vy * dt;
-  if (vy !== 0 && !blocked(map, entity.x, nextY, solid)) entity.y = nextY;
+  if (vy !== 0 && !blocked(map, entity.x, nextY, solid, half)) entity.y = nextY;
   else vy = 0;
 
   entity.vx = vx;

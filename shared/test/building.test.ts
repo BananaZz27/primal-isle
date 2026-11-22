@@ -15,8 +15,8 @@ import {
 import { makeMap } from "./helpers";
 
 describe("structure items", () => {
-  it("adds wall, door, bed to the bag order", () =>
-    expect(ITEM_IDS.slice(-3)).toEqual(["wall", "door", "bed"]));
+  it("adds wall, door, bed to the bag order (after the campfire food)", () =>
+    expect(ITEM_IDS.slice(8, 11)).toEqual(["wall", "door", "bed"]));
 
   it("recipes match the design table", () => {
     expect(recipeCost("wall")).toEqual({ wood: 2 });
