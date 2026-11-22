@@ -6,5 +6,6 @@ export default defineConfig({
     // ถ้ารันพร้อมกันจะชนพอร์ต (EADDRINUSE) — เจอบน GitHub Actions จึงบังคับให้รันทีละไฟล์
     fileParallelism: false,
     hookTimeout: 20000,
+    setupFiles: ["./test/setup.ts"],
   },
 });
