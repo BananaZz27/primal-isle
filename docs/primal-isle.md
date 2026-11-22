@@ -24,11 +24,11 @@
 
 ## สถานะ
 - ✅ ขั้นที่ 1–2 เดินด้วยกัน · ✅ ภาพ Pixel-boy · ✅ ขั้นที่ 3 เอาชีวิตรอด · ✅ ขั้นที่ 4 คราฟต์/กองไฟ
-- ✅ ขั้นที่ 6ข (branch `m6b-online`): PWA (`client/src/pwa/manifest.ts`, ไอคอน `client/public/icons/`, vite-plugin-pwa autoUpdate) · `Dockerfile` + `render.yaml` + workflow `pages.yml` · คู่มือ `docs/DEPLOY.md` · ทดสอบแล้ว: build ใต้โฟลเดอร์ย่อย /primal-isle/ + service worker + เข้าเกมได้, จำลองขั้นตอน Docker (ติดตั้งแบบ production, `/health`, SIGTERM แล้วบันทึกโลก) — เครื่องนี้ไม่มี Docker daemon จึงยังไม่ได้ build image จริง
+- ✅ ขั้นที่ 6ข: PWA (`client/src/pwa/manifest.ts`, ไอคอน `client/public/icons/`, vite-plugin-pwa autoUpdate) · `Dockerfile` + `render.yaml` + workflow `pages.yml` · คู่มือ `docs/DEPLOY.md` · ทดสอบแล้ว: build ใต้โฟลเดอร์ย่อย /primal-isle/ + service worker + เข้าเกมได้, จำลองขั้นตอน Docker (ติดตั้งแบบ production, `/health`, SIGTERM แล้วบันทึกโลก) — เครื่องนี้ไม่มี Docker daemon จึงยังไม่ได้ build image จริง
 - ✅ ขั้นที่ 6ก: ไดโน 4 ชนิด (จิ๋ว/ปากเป็ด/แร็พเตอร์/ไทรเซอราทอปส์), ตีได้เนื้อ, ย่างเนื้อ, หอก, เทม (คนละ 3 ตัว) ตามเจ้าของและช่วยสู้, บันทึกไฟล์ version 2 (อ่าน version 1 ได้) · ทดสอบในเบราว์เซอร์แล้ว: ล่า/เทม/ตาม/แร็พเตอร์กัด
 - ✅ ขั้นที่ 5: กำแพง (ชนได้) ประตู ที่นอน (ฟื้นที่ที่นอน, คนละ 1 อัน), รื้อได้ของคืน, ตายแล้วทิ้งถุงของ (หาย 15 นาที), บันทึก/โหลดโลก, token
 - ทดสอบในเบราว์เซอร์ (headless Chrome): ตีต้นไม้ → คราฟต์กำแพง → วาง → Ctrl+C เซิร์ฟเวอร์ → เปิดใหม่ → ใส่รหัสเดิม = กำแพงและของในกระเป๋ากลับมาครบ (ผ่าน 2 รอบติด)
-- เทสต์: shared 96 · server 73 · client 102 · CI บน GitHub
+- เทสต์: shared 96 · server 75 · client 105 · CI บน GitHub
 - **ยังไม่ได้ขึ้นออนไลน์จริง**: รอโบ๊ทสมัคร Render หรือ Oracle + เปิด GitHub Pages + ตั้งตัวแปร `SERVER_URL` ตาม `docs/DEPLOY.md` (ระหว่างนี้เล่นได้เฉพาะ Wi-Fi เดียวกัน)
 
 ## ไฟล์สำคัญ
@@ -56,7 +56,8 @@
 - (เล็ก) joystick/ปุ่ม ✋ ค้างได้ถ้าพับจอกลางการกด · กระเป๋าล้ำเข้าโซน joystick · หน้าคราฟต์ไม่ปิดตอนเน็ตสะดุด · ป้ายชื่อถูกต้นไม้บัง · กด Enter ในเมนูยังไม่ทำงาน
 - (เล็ก) เครื่องมือยังไม่มีความทนทาน · ยังไม่ได้วัด FPS บนมือถือจริง
 - `/monitor` และ playground เปิดเฉพาะตอน dev · Dockerfile ตั้ง `NODE_ENV=production` ไว้แล้ว (มีเทสต์)
-- Render ฟรี: หลับเมื่อว่าง 15 นาที และ**ลบไฟล์เซฟทุกครั้งที่หลับ/รีสตาร์ท** → อยากเก็บเกาะต้องใช้ Oracle
+- Render ฟรี: หลับเมื่อว่าง 15 นาที และ**ลบไฟล์เซฟทุกครั้งที่หลับ/รีสตาร์ท** → อยากเก็บเกาะต้องใช้ Oracle · render.yaml ตั้ง region singapore และ deploy เฉพาะเมื่อโค้ดเซิร์ฟเวอร์เปลี่ยน
+- (เล็ก ขั้นที่ 6ข) ยังไม่มีเทสต์อัตโนมัติว่า build มี sw.js (มีแค่เช็กใน pwa.test) · iPhone ไม่สนค่า fullscreen/landscape ของ manifest
 
 ## ขั้นต่อไป
 1. โบ๊ท: ขึ้นออนไลน์ตาม `docs/DEPLOY.md` (ต้องใช้บัญชีของโบ๊ทเอง)
