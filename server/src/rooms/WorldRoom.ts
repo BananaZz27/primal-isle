@@ -1,4 +1,4 @@
-import { Room, Client, CloseCode, matchMaker, type StepContext } from "colyseus";
+import { Room, Client, CloseCode, matchMaker, type Deferred, type StepContext } from "colyseus";
 import {
   findSpawn,
   freshStats,
@@ -63,6 +63,10 @@ export class WorldRoom extends Room<{ state: WorldState; input: MoveInput }> {
   /** ค่าที่จำไว้ของผู้เล่นที่ไม่ได้ออนไลน์ (key = token) */
   private savedPlayers: Record<string, SavedPlayer> = {};
   private code = "";
+  /** onCreate สำเร็จแล้ว — ก่อนหน้านั้นห้ามบันทึก (เปิดโลกพังกลางทาง = ห้ามเขียนทับไฟล์เดิม) */
+  private ready = false;
+  /** ผู้เล่นที่เน็ตหลุดและกำลังรอต่อกลับ (sessionId → การรอ) — กด F5 แล้วเข้าใหม่ได้ทันที */
+  private waitingReconnect = new Map<string, Deferred<Client>>();
   /** ช่องที่ชน: ทรัพยากร + กำแพง */
   private solid = (tx: number, ty: number) => this.survival.solid(tx, ty) || this.building.solid(tx, ty);
 
@@ -126,18 +130,24 @@ export class WorldRoom extends Room<{ state: WorldState; input: MoveInput }> {
 
     this.setFixedTimestep((ctx) => this.step(ctx), TICK_RATE);
     this.clock.setInterval(() => void this.persist(), SAVE_EVERY_MS);
+    this.ready = true;
   }
 
-  /** token เดียวกันห้ามออนไลน์สองที่ (กันตัวละครซ้ำ) */
+  /**
+   * token เดียวกันห้ามออนไลน์สองที่ (กันตัวละครซ้ำ)
+   * ยกเว้นตัวเดิมกำลังรอต่อกลับ (เช่น กด F5 / มือถือรีโหลดแท็บ) → ให้การเชื่อมต่อใหม่รับตัวละครไป
+   */
   onAuth(_client: Client, options: WorldJoinOptions = {}) {
-    if (isToken(options?.token) && [...this.owners.values()].includes(options.token)) {
-      throw new Error("already playing in another window");
-    }
+    if (!isToken(options?.token)) return true;
+    const holder = this.sessionOfToken(options.token);
+    if (holder !== null && !this.waitingReconnect.has(holder)) throw new Error("already playing in another window");
     return true;
   }
 
   onJoin(client: Client, options: WorldJoinOptions = {}) {
     const token = isToken(options?.token) ? options.token : `guest-${client.sessionId}`;
+    const old = this.sessionOfToken(token);
+    if (old !== null) return this.takeOver(old, client.sessionId, options);
     const saved = this.savedPlayers[token];
     const index = this.joinCount++;
     const spawn = findSpawn(this.map, index % MAX_PLAYERS);
@@ -162,7 +172,32 @@ export class WorldRoom extends Room<{ state: WorldState; input: MoveInput }> {
    * ถ้าต่อกลับมาทันก็เล่นต่อตัวเดิม ถ้าไม่ทัน Colyseus จะเรียก onLeave ให้เอง
    */
   onDrop(client: Client) {
-    this.allowReconnection(client, RECONNECT_SECONDS);
+    const waiting = this.allowReconnection(client, RECONNECT_SECONDS);
+    this.waitingReconnect.set(client.sessionId, waiting);
+    // ต่อกลับทัน/หมดเวลา/ถูกเข้าแทน → เลิกนับว่ารออยู่
+    waiting.then(
+      () => this.waitingReconnect.delete(client.sessionId),
+      () => this.waitingReconnect.delete(client.sessionId),
+    );
+  }
+
+  /** session ที่ถือ token นี้อยู่ตอนนี้ (null = ไม่มีใครถือ) */
+  private sessionOfToken(token: string): string | null {
+    for (const [sessionId, p] of this.state.players) if (this.owners.get(p) === token) return sessionId;
+    return null;
+  }
+
+  /** ย้ายตัวละครจาก session ที่หลุด ไปให้ session ใหม่ของคนเดิม */
+  private takeOver(oldSession: string, newSession: string, options: WorldJoinOptions) {
+    const player = this.state.players.get(oldSession)!;
+    this.state.players.delete(oldSession);
+    this.budget.forget(oldSession);
+    this.survival.forget(oldSession);
+    player.name = sanitizeName(options?.name);
+    this.state.players.set(newSession, player);
+    const waiting = this.waitingReconnect.get(oldSession);
+    this.waitingReconnect.delete(oldSession);
+    waiting?.reject(); // ตัวเก่าจะ onLeave ทันที แต่ไม่มีตัวละครให้ลบแล้ว
   }
 
   onLeave(client: Client, _code: CloseCode) {
@@ -200,10 +235,14 @@ export class WorldRoom extends Room<{ state: WorldState; input: MoveInput }> {
 
   /** บันทึกโลก + ผู้เล่นทุกคน (ออนไลน์อยู่ และที่เคยเข้ามา) */
   private async persist() {
+    if (!this.ready) return;
     const players = { ...this.savedPlayers };
     for (const [p, token] of this.owners) if (!token.startsWith("guest-")) players[token] = snapshotPlayer(p);
     try {
-      await getWorldStore().save(this.code, snapshotWorld(this.code, this.state, this.clock.currentTime, players));
+      await getWorldStore().save(
+        this.code,
+        snapshotWorld(this.code, this.state, this.clock.currentTime, players, (s) => this.building.structureOwner(s)),
+      );
     } catch (err) {
       console.error(`save failed for world ${this.code}:`, err); // บันทึกไม่ได้ไม่ควรทำให้เกมล่ม
     }

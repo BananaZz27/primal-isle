@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
-import { mkdtempSync, readdirSync, writeFileSync, existsSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -37,6 +37,35 @@ describe("JsonFileStore", () => {
     const s = new JsonFileStore(dir);
     expect(await s.load("QWERTY")).toBeNull();
     expect(existsSync(join(dir, "QWERTY.json"))).toBe(true);
+  });
+});
+
+describe("JsonFileStore under concurrent saves", () => {
+  const save = (code: string, seed: number, pad = 0) => ({
+    version: 1 as const, code, seed, savedAt: 1, nodes: [], structures: [], drops: [],
+    players: Object.fromEntries(Array.from({ length: pad }, (_, i) => [`tok${String(i).padStart(17, "0")}`, { x: 1, y: 1, health: 1, hunger: 1, thirst: 1, colorIndex: 0, inventory: {} }])),
+  });
+
+  // review: บันทึกตามรอบ 30 วิ ชนกับบันทึกตอนปิดห้อง → ไฟล์ .tmp เดียวกันถูกเขียนสองทาง
+  it("two overlapping saves of one world both succeed and the last one wins", async () => {
+    const store = new JsonFileStore(mkdtempSync(join(tmpdir(), "primal-race-")));
+    await Promise.all([store.save("RACEAA", save("RACEAA", 1, 3000)), store.save("RACEAA", save("RACEAA", 2))]);
+    expect((await store.load("RACEAA"))?.seed).toBe(2);
+  });
+
+  // review: เปิดโลกระหว่างที่ห้องเก่ากำลังบันทึกครั้งสุดท้าย → ต้องได้ข้อมูลล่าสุด
+  it("loading waits for a save that is still being written", async () => {
+    const store = new JsonFileStore(mkdtempSync(join(tmpdir(), "primal-wait-")));
+    await store.save("WTAAAA", save("WTAAAA", 1));
+    const pending = store.save("WTAAAA", save("WTAAAA", 2, 3000));
+    expect((await store.load("WTAAAA"))?.seed).toBe(2);
+    await pending;
+  });
+
+  it("a parseable file with a broken shape loads as null", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "primal-shape-"));
+    writeFileSync(join(dir, "SHAPEA.json"), JSON.stringify({ version: 1, code: "SHAPEA", seed: 1, nodes: null, players: {} }));
+    expect(await new JsonFileStore(dir).load("SHAPEA")).toBeNull();
   });
 });
 
@@ -100,6 +129,31 @@ describe("saved worlds", () => {
     await colyseus.connectTo(room, { name: "a", token: TOKEN_A });
     await expect(colyseus.connectTo(room, { name: "a2", token: TOKEN_A })).rejects.toBeTruthy();
     expect(room.state.players.size).toBe(1);
+  });
+
+  // review: กด F5 แล้วต้องกลับเข้าตัวเดิมได้ทันที ไม่ใช่โดนบอกว่า "เล่นอยู่อีกหน้าต่าง" 20 วิ
+  it("reloading the page takes over your own character straight away", async () => {
+    const room = await colyseus.createRoom<WorldRoom>("world", { seed: 1 });
+    const c = await colyseus.connectTo(room, { name: "a", token: TOKEN_A });
+    const p = room.state.players.get(c.sessionId)!;
+    p.inventory.set("wood", 5);
+    c.reconnection.enabled = false;
+    (c as any).connection.close(4999, "page reload"); // ปิดแท็บ/รีโหลด = หลุดแบบไม่ได้ตั้งใจออก
+    await sleep(200);
+    const again = await colyseus.connectTo(room, { name: "a", token: TOKEN_A });
+    expect(room.state.players.size).toBe(1);
+    expect(room.state.players.get(again.sessionId)?.inventory.get("wood")).toBe(5);
+    await sleep(200);
+    expect(room.state.players.get(again.sessionId)?.inventory.get("wood")).toBe(5); // ตัวเก่าหมดเวลาแล้วต้องไม่ลบตัวใหม่
+  });
+
+  // review: เปิดโลกไม่สำเร็จต้องไม่บันทึกทับไฟล์เดิม
+  it("a save file that fails to open is left untouched", async () => {
+    const bad = JSON.stringify({ version: 1, code: "BRKNXY", seed: 5, savedAt: 1, nodes: null, structures: [], players: { [TOKEN_A]: {} } });
+    writeFileSync(join(DIR, "BRKNXY.json"), bad);
+    await expect(colyseus.createRoom("world", { code: "BRKNXY" })).rejects.toBeTruthy();
+    await sleep(300);
+    expect(readFileSync(join(DIR, "BRKNXY.json"), "utf8")).toBe(bad);
   });
 
   it("opening an unknown or malformed code fails", async () => {

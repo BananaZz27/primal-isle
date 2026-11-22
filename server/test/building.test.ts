@@ -44,6 +44,36 @@ describe("building", () => {
     return { room, c, p, send };
   }
 
+  // review: token ของเจ้าของที่นอนห้ามส่งให้ client (token = กุญแจตัวละคร ใครได้ไปก็สวมรอยได้)
+  it("never sends a player's token to clients through structure owners", async () => {
+    const room = await colyseus.createRoom<WorldRoom>("world", { seed: SEED });
+    const TOKEN = "secretTOKENsecret0001";
+    const c = await colyseus.connectTo(room, { name: "t", token: TOKEN });
+    const p = room.state.players.get(c.sessionId)!;
+    p.inventory.set("bed", 1);
+    const t = freeTile();
+    Object.assign(p, centre(t.tx - 1, t.ty));
+    c.send("place", { item: "bed", tx: t.tx, ty: t.ty });
+    await room.waitForNextMessage();
+    await room.waitForNextPatch();
+    expect(room.state.structures.size).toBe(1);
+    expect(JSON.stringify(c.state.toJSON())).not.toContain(TOKEN);
+  });
+
+  // review: วางได้ไกล 32px แต่รื้อได้แค่ 24px → กดรื้อของที่เพิ่งวางไม่ได้
+  it("anything you can place, you can demolish from the same spot", async () => {
+    const { room, p, send } = await setup({ wall: 1 });
+    const t = freeTile();
+    // ยืนห่างกลางช่อง 29px (ไกลกว่าระยะเก็บของ 24px แต่ยังในระยะวาง 32px)
+    Object.assign(p, { x: t.tx * TILE_SIZE + 8 - 29, y: t.ty * TILE_SIZE + 8 });
+    await send("place", { item: "wall", tx: t.tx, ty: t.ty });
+    const key = [...room.state.structures.keys()][0];
+    expect(key).toBeDefined();
+    await send("demolish", { key });
+    expect(room.state.structures.size).toBe(0);
+    expect(p.inventory.get("wall")).toBe(1);
+  });
+
   it("places a wall on the tile next to the player and it blocks walking", async () => {
     const { room, c, p, send } = await setup({ wall: 1 });
     const t = freeTile();

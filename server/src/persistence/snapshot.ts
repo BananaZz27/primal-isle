@@ -1,5 +1,5 @@
 import type { WorldSave, SavedPlayer } from "./worldStore.js";
-import type { Player, WorldState } from "../rooms/schema/WorldState.js";
+import type { Player, Structure, WorldState } from "../rooms/schema/WorldState.js";
 
 /** ค่าที่ต้องจำของผู้เล่นหนึ่งคน */
 export function snapshotPlayer(p: Player): SavedPlayer {
@@ -20,6 +20,8 @@ export function snapshotWorld(
   state: WorldState,
   now: number,
   players: Record<string, SavedPlayer>,
+  /** เจ้าของของสิ่งก่อสร้าง (token) — ไม่ได้อยู่ใน state */
+  ownerOf: (s: Structure) => string,
 ): WorldSave {
   return {
     version: 1,
@@ -27,7 +29,7 @@ export function snapshotWorld(
     seed: state.seed,
     savedAt: Date.now(),
     nodes: [...state.nodes.entries()].map(([id, n]) => ({ id, hp: n.hp, regrowInMs: Math.max(0, n.regrowAt - now) })),
-    structures: [...state.structures.values()].map((s) => ({ kind: s.kind, tx: s.tx, ty: s.ty, owner: s.owner })),
+    structures: [...state.structures.values()].map((s) => ({ kind: s.kind, tx: s.tx, ty: s.ty, owner: ownerOf(s) })),
     drops: [...state.drops.values()].map((d) => ({
       tx: d.tx,
       ty: d.ty,

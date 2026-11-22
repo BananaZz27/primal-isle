@@ -42,13 +42,14 @@ export const NodeState = schema({
 });
 export type NodeState = SchemaType<typeof NodeState>;
 
-/** สิ่งที่ผู้เล่นวางไว้บนพื้น (ตอนนี้มีแค่กองไฟ) */
+/**
+ * สิ่งที่ผู้เล่นวางไว้บนพื้น (กองไฟ กำแพง ประตู ที่นอน)
+ * เจ้าของ (token) ไม่อยู่ในนี้ — เก็บฝั่งเซิร์ฟเวอร์ใน BuildingSystem เพราะ token คือกุญแจตัวละคร ห้ามส่งให้ client
+ */
 export const Structure = schema({
   kind: t.string(),
   tx: t.uint16(),
   ty: t.uint16(),
-  /** เจ้าของ (ใช้กับที่นอน: ฟื้นที่ที่นอนของตัวเอง) */
-  owner: t.string(),
 });
 export type Structure = SchemaType<typeof Structure>;
 

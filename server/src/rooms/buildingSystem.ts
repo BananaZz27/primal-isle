@@ -1,5 +1,6 @@
 import {
   BALANCE,
+  inPlaceReach,
   inReach,
   isStructureKind,
   placeCheck,
@@ -20,6 +21,8 @@ export class BuildingSystem {
   private occupied: Set<number>;
   private solidTiles = new Set<number>();
   private nextStructure = 0;
+  /** เจ้าของของแต่ละชิ้น (token) — เก็บนอก state เพื่อไม่ให้ส่งออกทางเน็ต */
+  private owners = new Map<Structure, string>();
   private nextDrop = 0;
 
   constructor(
@@ -27,7 +30,7 @@ export class BuildingSystem {
     private map: WorldMap,
     decor: Decor[],
     /** id เจ้าของของผู้เล่นคนนี้ (token หรือ sessionId) */
-    private ownerOf: (player: Player) => string,
+    private playerOwner: (player: Player) => string,
   ) {
     this.occupied = new Set(decor.map((d) => this.key(d.tx, d.ty)));
   }
@@ -48,10 +51,10 @@ export class BuildingSystem {
     };
     if (!placeCheck(world, player, item, tx, ty)) return;
 
-    const owner = this.ownerOf(player);
+    const owner = this.playerOwner(player);
     if (item === "bed") {
       // คนละ 1 ที่นอน: วางใหม่ = ย้าย (ที่นอนเก่ากลับเข้ากระเป๋า)
-      for (const [k, s] of this.state.structures) if (s.kind === "bed" && s.owner === owner) this.remove(k, player);
+      for (const [k, s] of this.state.structures) if (s.kind === "bed" && this.owners.get(s) === owner) this.remove(k, player);
     }
     setCount(player, item, (player.inventory.get(item) ?? 0) - 1);
     this.add(item, tx as number, ty as number, owner);
@@ -61,7 +64,8 @@ export class BuildingSystem {
     const key = (msg as { key?: unknown } | null)?.key;
     if (typeof key !== "string") return;
     const s = this.state.structures.get(key);
-    if (!s || !inReach(player.x, player.y, s.tx, s.ty)) return;
+    // ระยะรื้อ = ระยะวาง: ของที่เพิ่งวางต้องรื้อคืนได้จากจุดเดิม
+    if (!s || !inPlaceReach(player.x, player.y, s.tx, s.ty)) return;
     this.remove(key, player);
   }
 
@@ -95,9 +99,9 @@ export class BuildingSystem {
 
   /** จุดฟื้นของผู้เล่น: กลางช่องที่นอนของตัวเอง ถ้ามี */
   bedFor(player: Player): { x: number; y: number } | null {
-    const owner = this.ownerOf(player);
+    const owner = this.playerOwner(player);
     for (const s of this.state.structures.values()) {
-      if (s.kind === "bed" && s.owner === owner) {
+      if (s.kind === "bed" && this.owners.get(s) === owner) {
         return { x: s.tx * TILE_SIZE + TILE_SIZE / 2, y: s.ty * TILE_SIZE + TILE_SIZE / 2 };
       }
     }
@@ -108,13 +112,20 @@ export class BuildingSystem {
     for (const [k, d] of this.state.drops) if (d.expiresAt <= now) this.state.drops.delete(k);
   }
 
+  /** เจ้าของของชิ้นนี้ (ใช้ตอนบันทึกไฟล์เท่านั้น) */
+  structureOwner(s: Structure): string {
+    return this.owners.get(s) ?? "";
+  }
+
   /** ใช้ตอนโหลดโลกจากไฟล์ */
   restore(kind: string, tx: number, ty: number, owner: string): void {
     if (isStructureKind(kind)) this.add(kind, tx, ty, owner);
   }
 
   private add(kind: string, tx: number, ty: number, owner: string) {
-    this.state.structures.set(String(this.nextStructure++), new Structure({ kind, tx, ty, owner }));
+    const s = new Structure({ kind, tx, ty });
+    this.owners.set(s, owner);
+    this.state.structures.set(String(this.nextStructure++), s);
     if (isStructureKind(kind) && STRUCTURE_DEFS[kind].solid) this.solidTiles.add(this.key(tx, ty));
   }
 
@@ -122,6 +133,7 @@ export class BuildingSystem {
     const s = this.state.structures.get(key);
     if (!s) return;
     this.state.structures.delete(key);
+    this.owners.delete(s);
     this.solidTiles.delete(this.key(s.tx, s.ty));
     const item = s.kind as ItemId;
     setCount(refundTo, item, Math.min(BALANCE.stackMax, (refundTo.inventory.get(item) ?? 0) + 1));

@@ -21,12 +21,22 @@ export function frontTile(px: number, py: number, facing: Facing): { tx: number;
   }
 }
 
-/** ของที่ใกล้ที่สุดในระยะเอื้อม (สิ่งก่อสร้างที่จะรื้อ / ถุงที่จะเก็บ) */
-export function nearestInReach<T extends { tx: number; ty: number }>(px: number, py: number, things: T[]): T | null {
+type ReachFn = (px: number, py: number, tx: number, ty: number) => boolean;
+
+/**
+ * ของที่ใกล้ที่สุดในระยะเอื้อม (ถุงที่จะเก็บ = ระยะเก็บของ, สิ่งก่อสร้างที่จะรื้อ = ส่ง inPlaceReach)
+ * ต้องใช้ระยะเดียวกับที่เซิร์ฟเวอร์ตรวจ ไม่งั้นกดแล้วไม่เกิดอะไร
+ */
+export function nearestInReach<T extends { tx: number; ty: number }>(
+  px: number,
+  py: number,
+  things: T[],
+  reach: ReachFn = inReach,
+): T | null {
   let best: T | null = null;
   let bestDist = Infinity;
   for (const t of things) {
-    if (!inReach(px, py, t.tx, t.ty)) continue;
+    if (!reach(px, py, t.tx, t.ty)) continue;
     const d = Math.hypot(px - (t.tx + 0.5) * TILE_SIZE, py - (t.ty + 0.5) * TILE_SIZE);
     if (d < bestDist) {
       best = t;

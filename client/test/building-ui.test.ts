@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { hitboxTouches, isToken, placeCheck, Tile, TILE_SIZE, type PlaceWorld } from "@primal/shared";
+import { hitboxTouches, inPlaceReach, isToken, placeCheck, Tile, TILE_SIZE, type PlaceWorld } from "@primal/shared";
 import type { Facing } from "../src/render/facing";
 import { frontTile, nearestInReach } from "../src/input/building";
 import { newToken } from "../src/net/token";
@@ -43,6 +43,13 @@ describe("nearestInReach", () => {
     ];
     expect(nearestInReach(p.x, p.y, things)?.key).toBe("near");
     expect(nearestInReach(p.x, p.y, [things[0]])).toBeNull();
+  });
+
+  it("can use the longer place reach, so the 🪓 reaches anything you just placed", () => {
+    const p = { x: 5 * TILE_SIZE + 8 - 29, y: 5 * TILE_SIZE + 8 }; // ห่างกลางช่อง (5,5) 29px
+    const wall = [{ key: "w", tx: 5, ty: 5 }];
+    expect(nearestInReach(p.x, p.y, wall)).toBeNull();
+    expect(nearestInReach(p.x, p.y, wall, inPlaceReach)?.key).toBe("w");
   });
 });
 

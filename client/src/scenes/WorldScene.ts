@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { generateDecor, generateWorld, solidFromNodes, TILE_SIZE } from "@primal/shared";
+import { generateDecor, generateWorld, inPlaceReach, solidFromNodes, TILE_SIZE } from "@primal/shared";
 import { CAMERA_ZOOM } from "../config";
 import { combineInputs } from "../input/combine";
 import { InteractControls, pickTarget } from "../input/interact";
@@ -106,7 +106,7 @@ export class WorldScene extends Phaser.Scene {
     demolish.title = "รื้อสิ่งก่อสร้างที่ใกล้ที่สุด";
     demolish.addEventListener("click", () => {
       const pos = myPos();
-      const target = pos && nearestInReach(pos.x, pos.y, structures.all());
+      const target = pos && nearestInReach(pos.x, pos.y, structures.all(), inPlaceReach);
       if (target) this.room.send("demolish", { key: target.key });
     });
     this.inventoryHud.element.append(demolish);
