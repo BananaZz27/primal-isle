@@ -47,6 +47,31 @@ describe("pickTarget", () => {
   });
 });
 
+describe("pickTarget with a campfire", () => {
+  const map = island();
+  const fire = [{ tx: 3, ty: 4 }];
+
+  it("cooks at a nearby campfire when holding a berry", () => {
+    const p = at(3, 3);
+    expect(pickTarget(p.x, p.y, [], map, () => false, fire, true)).toEqual({ kind: "campfire" });
+  });
+
+  it("no berry → the campfire is ignored", () => {
+    const p = at(3, 3);
+    expect(pickTarget(p.x, p.y, [], map, () => false, fire, false)).toBeNull();
+  });
+
+  it("a resource in reach still comes first", () => {
+    const p = at(3, 3);
+    expect(pickTarget(p.x, p.y, [node(DecorKind.Tree, 4, 3)], map, () => false, fire, true)).toEqual({ kind: "node", id: 0 });
+  });
+
+  it("a campfire out of reach is ignored", () => {
+    const p = at(3, 3);
+    expect(pickTarget(p.x, p.y, [], map, () => false, [{ tx: 5, ty: 5 }], true)).toBeNull();
+  });
+});
+
 describe("barPercent", () => {
   it("clamps and rounds", () => {
     expect(barPercent(55.4)).toBe(55);

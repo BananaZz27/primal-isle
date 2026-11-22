@@ -9,6 +9,8 @@ import type { WorldRoom } from "../net/connection";
 import { startPrediction, type Prediction } from "../net/prediction";
 import { PlayerSprites } from "../render/players";
 import { ResourceView } from "../render/resourceNodes";
+import { StructureView } from "../render/structures";
+import { CraftPanel } from "../ui/craftPanel";
 import { buildTilemap } from "../render/tilemap";
 import { showConnectionLost, showReconnecting } from "../ui/hud";
 import { InventoryHud } from "../ui/inventory";
@@ -32,6 +34,7 @@ export class WorldScene extends Phaser.Scene {
   private interact!: InteractControls;
   private statsHud!: StatsHud;
   private inventoryHud!: InventoryHud;
+  private craftPanel!: CraftPanel;
   private hudTimer = 0;
   private connected = true;
 
@@ -68,17 +71,25 @@ export class WorldScene extends Phaser.Scene {
 
     // โต้ตอบ: หาสิ่งที่ใกล้ที่สุดจากตำแหน่งที่เห็นบนจอ แล้วขอเซิร์ฟเวอร์ (เซิร์ฟเวอร์ตรวจซ้ำเสมอ)
     const isDepleted = (id: number) => this.room.state.nodes.get(String(id))?.hp === 0;
+    const structures = new StructureView(this, this.room);
     this.interact = new InteractControls(this, TouchJoystick.wanted(), () => {
       const me = this.room.state.players.get(this.room.sessionId);
       if (!me || !this.connected) return;
       const { x, y } = this.prediction.pos(me);
-      const target = pickTarget(x, y, decor, map, isDepleted);
+      const hasBerry = (me.inventory.get("berry") ?? 0) > 0;
+      const target = pickTarget(x, y, decor, map, isDepleted, structures.campfires(), hasBerry);
       if (target?.kind === "node") this.room.send("gather", { node: target.id });
+      else if (target?.kind === "campfire") this.room.send("cook", {});
       else if (target?.kind === "water") this.room.send("drink", {});
     });
     this.statsHud = new StatsHud();
-    this.inventoryHud = new InventoryHud((item) => this.room.send("eat", { item }));
+    this.inventoryHud = new InventoryHud((item, action) =>
+      action === "eat" ? this.room.send("eat", { item }) : this.room.send("place", { item }),
+    );
+    this.craftPanel = new CraftPanel((recipe) => this.room.send("craft", { recipe }));
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      structures.destroy();
+      this.craftPanel.destroy();
       this.interact.destroy();
       this.statsHud.destroy();
       this.inventoryHud.destroy();
@@ -158,6 +169,7 @@ export class WorldScene extends Phaser.Scene {
       if (me) {
         this.statsHud.update(me);
         this.inventoryHud.update(me);
+        this.craftPanel.update(me);
       }
     }
   }

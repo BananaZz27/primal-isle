@@ -1,6 +1,9 @@
 import Phaser from "phaser";
 import { TILE_SIZE } from "@primal/shared";
 import { ASSET_ROOT, SURVIVOR_IDS, TEX, TREE_RECTS } from "../art/ninjaAtlas";
+import { CAMPFIRE_FRAMES, CAMPFIRE_PALETTE } from "../art/campfire";
+import { paintTexture } from "../art/paint";
+import { CAMPFIRE_ANIM } from "../render/structures";
 import { registerSurvivorAnims } from "../render/survivorAnims";
 import { showLoadError } from "../ui/loadError";
 
@@ -37,6 +40,14 @@ export class BootScene extends Phaser.Scene {
     TREE_RECTS.forEach((r, i) => sheet.add(TEX.tree(i), 0, r.x, r.y, r.w, r.h));
 
     registerSurvivorAnims(this);
+
+    // กองไฟวาดเอง: แผ่นภาพ 2 เฟรมเรียงแนวนอน แล้วแบ่งเป็น frame 0/1 ให้ animation
+    paintTexture(this, TEX.campfire, CAMPFIRE_FRAMES, CAMPFIRE_PALETTE);
+    const fire = this.textures.get(TEX.campfire);
+    CAMPFIRE_FRAMES.forEach((_, i) => fire.add(i, 0, i * TILE_SIZE, 0, TILE_SIZE, TILE_SIZE));
+    if (!this.anims.exists(CAMPFIRE_ANIM)) {
+      this.anims.create({ key: CAMPFIRE_ANIM, frames: [{ key: TEX.campfire, frame: 0 }, { key: TEX.campfire, frame: 1 }], frameRate: 5, repeat: -1 });
+    }
     this.scene.start("Menu");
   }
 }

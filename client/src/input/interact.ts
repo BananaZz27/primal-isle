@@ -3,11 +3,13 @@ import { BALANCE, inReach, nodeDef, TILE_SIZE, touchesWater, type Decor, type Wo
 import { el, uiRoot } from "../ui/dom";
 import { RepeatGate } from "./repeatGate";
 
-export type Target = { kind: "node"; id: number } | { kind: "water" } | null;
+export type Target = { kind: "node"; id: number } | { kind: "campfire" } | { kind: "water" } | null;
 
 /**
- * เลือกสิ่งที่จะโต้ตอบเมื่อกดปุ่ม: ทรัพยากรที่ใกล้ที่สุดในระยะเอื้อม (ที่ยังไม่หมด)
- * ไม่มี → ถ้าติดน้ำ = ดื่ม · ไม่มีอะไรเลย → null
+ * เลือกสิ่งที่จะโต้ตอบเมื่อกดปุ่ม ตามลำดับ:
+ * 1) ทรัพยากรที่ใกล้ที่สุดในระยะเอื้อม (ที่ยังไม่หมด)
+ * 2) กองไฟในระยะ — เฉพาะเมื่อมีผลไม้ให้ย่าง
+ * 3) น้ำในระยะ = ดื่ม · ไม่มีอะไรเลย → null
  */
 export function pickTarget(
   px: number,
@@ -15,6 +17,8 @@ export function pickTarget(
   decor: Decor[],
   map: WorldMap,
   isDepleted: (id: number) => boolean,
+  campfires: { tx: number; ty: number }[] = [],
+  hasBerry = false,
 ): Target {
   let best: { id: number; dist: number } | null = null;
   decor.forEach((d, id) => {
@@ -23,6 +27,7 @@ export function pickTarget(
     if (!best || dist < best.dist) best = { id, dist };
   });
   if (best) return { kind: "node", id: (best as { id: number }).id };
+  if (hasBerry && campfires.some((c) => inReach(px, py, c.tx, c.ty))) return { kind: "campfire" };
   return touchesWater(map, px, py) ? { kind: "water" } : null;
 }
 

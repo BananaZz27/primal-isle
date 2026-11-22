@@ -1,3 +1,6 @@
+import type { ItemId } from "@primal/shared";
+import { CAMPFIRE_FRAMES, CAMPFIRE_PALETTE } from "./campfire";
+
 /**
  * แผนที่ภาพใน asset pack ของ Pixel-boy (CC0) — บอกว่าช่องไหนใน tileset คืออะไร
  * ไฟล์ต้นทาง: github.com/sparklinlabs/superpowers-asset-packs (ninja-adventure)
@@ -74,21 +77,32 @@ export const TEX = {
   tilesImage: "ninja-tiles-image", // ภาพเต็ม ใช้ตัดต้นไม้
   tree: (i: number) => `tree-${i}`,
   survivor: (id: string) => `survivor-${id}`,
+  campfire: "campfire", // วาดเองใน BootScene (2 เฟรม)
 };
 
 /** พุ่มไม้ผลไม้ (ทรัพยากร) และตอไม้ (ต้นไม้ที่ถูกตัดหมด) */
 export const BUSH_FRAME = frameAt(13, 9);
 export const STUMP_FRAME = frameAt(9, 8);
 
-/** ไอคอน: ช่องใน tileset หรือไฟล์แยก (path สัมพัทธ์กับ ASSET_ROOT) */
-export type Icon = { kind: "tile"; frame: number } | { kind: "file"; path: string };
+/**
+ * ไอคอน: ช่องใน tileset, ไฟล์แยก (path สัมพัทธ์กับ ASSET_ROOT)
+ * หรือภาพที่วาดเองด้วยตัวอักษร (rows + palette แบบเดียวกับ parsePixelArt)
+ */
+export type Icon =
+  | { kind: "tile"; frame: number }
+  | { kind: "file"; path: string }
+  | { kind: "pixels"; rows: string[]; palette: Record<string, string> };
 
 /** ไอคอนของในกระเป๋า */
-export const ITEM_ICONS: Record<"wood" | "stone" | "berry" | "fiber", Icon> = {
+export const ITEM_ICONS: Record<ItemId, Icon> = {
   wood: { kind: "tile", frame: STUMP_FRAME },
   stone: { kind: "tile", frame: frameAt(0, 7) },
   berry: { kind: "tile", frame: frameAt(1, 9) },
   fiber: { kind: "file", path: "items/tea-leaf.png" },
+  axe: { kind: "file", path: "items/axe.png" },
+  hammer: { kind: "file", path: "items/hammer.png" },
+  campfire: { kind: "pixels", rows: CAMPFIRE_FRAMES[0], palette: CAMPFIRE_PALETTE },
+  roast: { kind: "file", path: "items/yakitori.png" },
 };
 
 /** ไอคอนค่าสถานะ */

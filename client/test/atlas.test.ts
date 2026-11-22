@@ -81,7 +81,8 @@ describe("survival art", () => {
     expect(Object.keys(ITEM_ICONS).sort()).toEqual([...ITEM_IDS].sort());
     for (const icon of [...Object.values(ITEM_ICONS), ...Object.values(STAT_ICONS)]) {
       if (icon.kind === "file") expect(existsSync(assets(icon.path)), icon.path).toBe(true);
-      else expect(icon.frame).toBeLessThan(FRAMES);
+      else if (icon.kind === "tile") expect(icon.frame).toBeLessThan(FRAMES);
+      else expect(icon.rows.length).toBe(16);
     }
     expect(Object.keys(STAT_ICONS).sort()).toEqual(["health", "hunger", "thirst"]);
     for (const f of [BUSH_FRAME, STUMP_FRAME]) expect(f).toBeLessThan(FRAMES);

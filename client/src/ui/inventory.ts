@@ -5,24 +5,31 @@ import { el, uiRoot } from "./dom";
 import { iconElement } from "./icons";
 import { itemLabel } from "./labels";
 
-/** ของที่แตะแล้วใช้ได้ (ตอนนี้มีแค่ผลไม้ = กิน) */
-const USABLE: Partial<Record<ItemId, true>> = { berry: true };
+/** วัตถุดิบพื้นฐาน: แสดงในกระเป๋าเสมอ (ของอื่นแสดงเมื่อมี) */
+const ALWAYS: ReadonlySet<ItemId> = new Set(["wood", "stone", "berry", "fiber"]);
 
-/** กระเป๋าตรงกลางล่าง: ไอคอน + จำนวน · แตะผลไม้เพื่อกิน */
+/** แตะของชนิดนี้แล้วทำอะไร */
+export type ItemAction = "eat" | "place";
+const ACTIONS: Partial<Record<ItemId, ItemAction>> = { berry: "eat", roast: "eat", campfire: "place" };
+const ACTION_HINT: Record<ItemAction, string> = { eat: "แตะเพื่อกิน", place: "แตะเพื่อวางตรงที่ยืน" };
+
+/** กระเป๋าตรงกลางล่าง: ไอคอน + จำนวน · แตะของกิน = กิน · แตะกองไฟ = วาง */
 export class InventoryHud {
   private root = el("div", { className: "panel inventory" });
   private counts = new Map<ItemId, HTMLElement>();
   private slots = new Map<ItemId, HTMLElement>();
 
-  constructor(onUse: (item: ItemId) => void) {
+  constructor(onUse: (item: ItemId, action: ItemAction) => void) {
     for (const id of ITEM_IDS) {
       const count = el("span", { className: "count", text: "0" });
       const slot = el("button", { className: "slot" }, iconElement(ITEM_ICONS[id]), count);
-      slot.title = USABLE[id] ? `${itemLabel(id)} (แตะเพื่อกิน)` : itemLabel(id);
+      const action = ACTIONS[id];
+      slot.title = action ? `${itemLabel(id)} (${ACTION_HINT[action]})` : itemLabel(id);
       slot.addEventListener("pointerdown", (e) => {
         e.preventDefault();
-        if (USABLE[id]) onUse(id);
+        if (action) onUse(id, action);
       });
+      slot.hidden = !ALWAYS.has(id);
       this.root.append(slot);
       this.counts.set(id, count);
       this.slots.set(id, slot);
@@ -33,8 +40,10 @@ export class InventoryHud {
   update(player: Player): void {
     for (const id of ITEM_IDS) {
       const n = player.inventory.get(id) ?? 0;
+      const slot = this.slots.get(id)!;
       this.counts.get(id)!.textContent = String(n);
-      this.slots.get(id)!.classList.toggle("empty", n === 0);
+      slot.classList.toggle("empty", n === 0);
+      slot.hidden = n === 0 && !ALWAYS.has(id);
     }
   }
 
