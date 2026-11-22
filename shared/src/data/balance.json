@@ -65,6 +65,11 @@
     "bed": {
       "wood": 3,
       "fiber": 4
+    },
+    "spear": {
+      "wood": 3,
+      "stone": 2,
+      "fiber": 3
     }
   },
   "maxCampfires": 30,
@@ -82,5 +87,75 @@
     "bed": {
       "solid": false
     }
-  }
+  },
+  "meatFood": 12,
+  "steakFood": 45,
+  "damage": {
+    "fist": 4,
+    "axe": 8,
+    "spear": 12
+  },
+  "maxTamed": 3,
+  "dinoRespawnSec": 30,
+  "dinoSpawnMinTiles": 12,
+  "dinoSpawnAwayFromSpawnTiles": 16,
+  "dinoLeashPx": 160,
+  "dinoWanderPx": 64,
+  "feedForgetSec": 60,
+  "tamedFollowPx": 40,
+  "dinos": {
+    "compy": {
+      "half": 6,
+      "hp": 20,
+      "speed": 40,
+      "runSpeed": 70,
+      "meat": 1,
+      "cap": 12,
+      "temper": "skittish",
+      "aggroPx": 48,
+      "bite": 0,
+      "biteCooldownMs": 1000,
+      "tameFood": "berry",
+      "tameCount": 3
+    },
+    "duckbill": {
+      "half": 12,
+      "hp": 60,
+      "speed": 35,
+      "runSpeed": 75,
+      "meat": 3,
+      "cap": 8,
+      "temper": "shy",
+      "aggroPx": 0,
+      "bite": 0,
+      "biteCooldownMs": 1000
+    },
+    "raptor": {
+      "half": 9,
+      "hp": 45,
+      "speed": 50,
+      "runSpeed": 90,
+      "meat": 2,
+      "cap": 6,
+      "temper": "aggressive",
+      "aggroPx": 96,
+      "bite": 8,
+      "biteCooldownMs": 1000,
+      "tameFood": "meat",
+      "tameCount": 4
+    },
+    "trike": {
+      "half": 14,
+      "hp": 150,
+      "speed": 30,
+      "runSpeed": 80,
+      "meat": 6,
+      "cap": 4,
+      "temper": "defensive",
+      "aggroPx": 0,
+      "bite": 15,
+      "biteCooldownMs": 1500
+    }
+  },
+  "tamedFollowSpeed": 95
 }

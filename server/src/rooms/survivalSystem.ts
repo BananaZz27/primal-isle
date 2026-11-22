@@ -1,12 +1,14 @@
 import {
   BALANCE,
+  dinoDef,
   FOOD,
+  hitboxTouches,
+  isDinoKind,
   findSpawn,
   gatherYield,
   freshStats,
   inReach,
   nodeDef,
-  PLAYER_HALF,
   solidFromNodes,
   TILE_SIZE,
   tickStats,
@@ -53,8 +55,7 @@ export class SurvivalSystem {
     const d = this.decor[nodeId];
     const def = d && nodeDef(d.kind);
     if (!def) return;
-    // นาฬิกาของห้องเดินทีละ tick จึงเผื่อให้ 1 tick ไม่งั้นการกดที่ตรงจังหวะพอดีจะถูกปฏิเสธแบบสุ่ม
-    if (now - (this.lastGather.get(sessionId) ?? -Infinity) < BALANCE.gatherCooldownMs - TICK_MS) return;
+    if (!this.ready(sessionId, now)) return;
     if (!inReach(player.x, player.y, d.tx, d.ty)) return;
 
     const key = String(nodeId);
@@ -65,10 +66,23 @@ export class SurvivalSystem {
       this.state.nodes.set(key, node);
     }
 
-    this.lastGather.set(sessionId, now);
+    this.acted(sessionId, now);
     node.hp -= 1;
     if (node.hp === 0) node.regrowAt = now + def.regrowSec * 1000;
     this.addItem(player, def.item, gatherYield(def.item, (item) => player.inventory.get(item) ?? 0));
+  }
+
+  /**
+   * คูลดาวน์ของ "การตี" (เก็บของและตีไดโนใช้ร่วมกัน)
+   * นาฬิกาของห้องเดินทีละ tick จึงเผื่อให้ 1 tick ไม่งั้นการกดที่ตรงจังหวะพอดีจะถูกปฏิเสธแบบสุ่ม
+   */
+  ready(sessionId: string, now: number): boolean {
+    return now - (this.lastGather.get(sessionId) ?? -Infinity) >= BALANCE.gatherCooldownMs - TICK_MS;
+  }
+
+  /** บันทึกว่าเพิ่งตีไป (เรียกหลังตีสำเร็จ) */
+  acted(sessionId: string, now: number): void {
+    this.lastGather.set(sessionId, now);
   }
 
   eat(player: Player, item: unknown): void {
@@ -107,20 +121,16 @@ export class SurvivalSystem {
     for (const [key, node] of this.state.nodes) {
       if (node.hp !== 0 || node.regrowAt > now) continue;
       const d = this.decor[Number(key)];
-      // ของแข็งห้ามงอกทับผู้เล่น (ผู้เล่นจะติดในต้นไม้) — รอรอบหน้า
-      if (nodeDef(d.kind)?.solid && this.playerOnTile(d.tx, d.ty)) continue;
+      // ของแข็งห้ามงอกทับผู้เล่นหรือไดโน (จะติดในต้นไม้) — รอรอบหน้า
+      if (nodeDef(d.kind)?.solid && this.bodyOnTile(d.tx, d.ty)) continue;
       this.state.nodes.delete(key);
     }
   }
 
-  private playerOnTile(tx: number, ty: number): boolean {
-    for (const p of this.state.players.values()) {
-      const left = Math.floor((p.x - PLAYER_HALF) / TILE_SIZE);
-      const right = Math.floor((p.x + PLAYER_HALF) / TILE_SIZE);
-      const top = Math.floor((p.y - PLAYER_HALF) / TILE_SIZE);
-      const bottom = Math.floor((p.y + PLAYER_HALF) / TILE_SIZE);
-      if (tx >= left && tx <= right && ty >= top && ty <= bottom) return true;
-    }
+  private bodyOnTile(tx: number, ty: number): boolean {
+    for (const p of this.state.players.values()) if (hitboxTouches(p.x, p.y, tx, ty)) return true;
+    for (const d of this.state.dinos.values())
+      if (isDinoKind(d.kind) && hitboxTouches(d.x, d.y, tx, ty, dinoDef(d.kind).half)) return true;
     return false;
   }
 

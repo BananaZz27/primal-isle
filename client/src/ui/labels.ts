@@ -12,6 +12,9 @@ const ITEM_LABELS: Record<ItemId, string> = {
   wall: "กำแพงไม้",
   door: "ประตูไม้",
   bed: "ที่นอน",
+  meat: "เนื้อดิบ",
+  steak: "เนื้อย่าง",
+  spear: "หอก",
 };
 
 /** ชื่อของภาษาไทย */
@@ -32,4 +35,5 @@ export const RECIPE_HINTS: Record<RecipeId, string> = {
   wall: "กั้นทาง ไดโนเสาร์และคนเดินผ่านไม่ได้",
   door: "ช่องทางเข้าฐาน เดินผ่านได้",
   bed: "สลบแล้วฟื้นที่นี่ (คนละ 1 ที่)",
+  spear: "ตีไดโนแรงขึ้น (12 ต่อครั้ง)",
 };

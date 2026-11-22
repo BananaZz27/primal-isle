@@ -9,6 +9,12 @@ import {
 import type { Player, WorldState } from "./schema/WorldState.js";
 import { setCount } from "./survivalSystem.js";
 
+/** ของดิบ → ของย่าง (ลำดับ = ลำดับที่เลือกย่าง) */
+const COOKING: [ItemId, ItemId][] = [
+  ["meat", "steak"],
+  ["berry", "roast"],
+];
+
 /**
  * ระบบคราฟต์ฝั่งเซิร์ฟเวอร์ (ตัวตัดสินจริง): ทำของ, ย่างผลไม้ (การวางอยู่ใน BuildingSystem)
  * คำขอที่ผิดถูกเมินเงียบๆ และไม่ทำให้เสียของ
@@ -28,16 +34,20 @@ export class CraftingSystem {
     setCount(player, recipe, Math.min(BALANCE.stackMax, has(recipe) + 1));
   }
 
-  /** ย่างผลไม้ 1 ลูก ถ้ายืนใกล้กองไฟ */
+  /**
+   * ย่าง 1 ชิ้น ถ้ายืนใกล้กองไฟ: เนื้อดิบ → เนื้อย่าง ก่อน, ไม่มีเนื้อ (หรือเนื้อย่างเต็ม) → ผลไม้ → ผลไม้ย่าง
+   * ของที่ได้เต็ม 99 แล้วไม่ย่าง (ไม่เผาของทิ้ง)
+   */
   cook(player: Player): void {
-    const berries = player.inventory.get("berry") ?? 0;
-    if (berries <= 0) return;
-    if ((player.inventory.get("roast") ?? 0) >= BALANCE.stackMax) return; // เต็มแล้ว ไม่เผาผลไม้ทิ้ง
     const nearFire = [...this.state.structures.values()].some(
       (s) => s.kind === "campfire" && inReach(player.x, player.y, s.tx, s.ty),
     );
     if (!nearFire) return;
-    setCount(player, "berry", berries - 1);
-    setCount(player, "roast", Math.min(BALANCE.stackMax, (player.inventory.get("roast") ?? 0) + 1));
+    const has = (item: ItemId) => player.inventory.get(item) ?? 0;
+    const pair = COOKING.find(([raw, done]) => has(raw) > 0 && has(done) < BALANCE.stackMax);
+    if (!pair) return;
+    const [raw, done] = pair;
+    setCount(player, raw, has(raw) - 1);
+    setCount(player, done, has(done) + 1);
   }
 }

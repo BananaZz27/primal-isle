@@ -5,17 +5,17 @@ const bag = (items: Partial<Record<ItemId, number>>) => (id: ItemId) => items[id
 
 describe("items and recipes", () => {
   it("knows all items in bag order", () =>
-    expect([...ITEM_IDS]).toEqual(["wood", "stone", "berry", "fiber", "axe", "hammer", "campfire", "roast", "wall", "door", "bed"]));
+    expect([...ITEM_IDS]).toEqual(["wood", "stone", "berry", "fiber", "axe", "hammer", "campfire", "roast", "wall", "door", "bed", "meat", "steak", "spear"]));
 
   it("recipes match the design table", () => {
-    expect([...RECIPE_IDS]).toEqual(["axe", "hammer", "campfire", "wall", "door", "bed"]);
+    expect([...RECIPE_IDS]).toEqual(["axe", "hammer", "campfire", "wall", "door", "bed", "spear"]);
     expect(recipeCost("axe")).toEqual({ wood: 3, stone: 2, fiber: 2 });
     expect(recipeCost("hammer")).toEqual({ wood: 2, stone: 3, fiber: 2 });
     expect(recipeCost("campfire")).toEqual({ wood: 5, stone: 3 });
   });
 
-  it("food values", () => expect(FOOD).toEqual({ berry: 20, roast: 35 }));
-  it("tools", () => expect([...TOOLS]).toEqual(["axe", "hammer"]));
+  it("food values", () => expect(FOOD).toEqual({ berry: 20, roast: 35, meat: 12, steak: 45 }));
+  it("tools", () => expect([...TOOLS]).toEqual(["axe", "hammer", "spear"]));
 });
 
 describe("craftCheck", () => {

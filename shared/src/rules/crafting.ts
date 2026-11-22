@@ -5,10 +5,15 @@ export type RecipeId = keyof typeof BALANCE.recipes;
 export const RECIPE_IDS = Object.keys(BALANCE.recipes) as RecipeId[];
 
 /** เครื่องมือ: มีได้ชิ้นเดียวต่อชนิด */
-export const TOOLS: readonly ItemId[] = ["axe", "hammer"];
+export const TOOLS: readonly ItemId[] = ["axe", "hammer", "spear"];
 
 /** ของที่กินได้ → เพิ่มความอิ่มเท่าไร */
-export const FOOD: Partial<Record<ItemId, number>> = { berry: BALANCE.berryFood, roast: BALANCE.roastFood };
+export const FOOD: Partial<Record<ItemId, number>> = {
+  berry: BALANCE.berryFood,
+  roast: BALANCE.roastFood,
+  meat: BALANCE.meatFood,
+  steak: BALANCE.steakFood,
+};
 
 export function recipeCost(id: RecipeId): Partial<Record<ItemId, number>> {
   return { ...(BALANCE.recipes[id] as Partial<Record<ItemId, number>>) };

@@ -1,4 +1,5 @@
 import type { WorldSave, SavedPlayer } from "./worldStore.js";
+import type { SavedDino } from "../rooms/dinoSystem.js";
 import type { Player, Structure, WorldState } from "../rooms/schema/WorldState.js";
 
 /** ค่าที่ต้องจำของผู้เล่นหนึ่งคน */
@@ -22,9 +23,10 @@ export function snapshotWorld(
   players: Record<string, SavedPlayer>,
   /** เจ้าของของสิ่งก่อสร้าง (token) — ไม่ได้อยู่ใน state */
   ownerOf: (s: Structure) => string,
+  dinos: SavedDino[],
 ): WorldSave {
   return {
-    version: 1,
+    version: 2,
     code,
     seed: state.seed,
     savedAt: Date.now(),
@@ -37,5 +39,6 @@ export function snapshotWorld(
       items: Object.fromEntries(d.items.entries()),
     })),
     players,
+    dinos,
   };
 }

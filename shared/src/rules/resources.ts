@@ -21,7 +21,10 @@ export type ItemId =
   | "roast"
   | "wall"
   | "door"
-  | "bed";
+  | "bed"
+  | "meat"
+  | "steak"
+  | "spear";
 /** ลำดับนี้ = ลำดับช่องในกระเป๋า */
 export const ITEM_IDS: readonly ItemId[] = [
   "wood",
@@ -35,6 +38,9 @@ export const ITEM_IDS: readonly ItemId[] = [
   "wall",
   "door",
   "bed",
+  "meat",
+  "steak",
+  "spear",
 ];
 
 export interface NodeDef {

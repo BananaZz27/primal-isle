@@ -7,3 +7,4 @@
 - [ออกแบบขั้นที่ 3](superpowers/specs/2026-11-21-m3-survival-design.md) · [แผน](superpowers/plans/2026-11-21-m3-survival.md)
 - [ออกแบบขั้นที่ 4](superpowers/specs/2026-11-22-m4-crafting-design.md) · [แผน](superpowers/plans/2026-11-22-m4-crafting.md)
 - [ออกแบบขั้นที่ 5](superpowers/specs/2026-11-22-m5-base-save-design.md) · [แผน](superpowers/plans/2026-11-22-m5-base-save.md)
+- [ออกแบบขั้นที่ 6ก ไดโนเสาร์](superpowers/specs/2026-11-22-m6-dinos-design.md) · [แผน](superpowers/plans/2026-11-22-m6-dinos.md)

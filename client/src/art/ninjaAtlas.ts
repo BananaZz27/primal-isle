@@ -1,6 +1,7 @@
 import type { ItemId } from "@primal/shared";
 import { CAMPFIRE_FRAMES, CAMPFIRE_PALETTE } from "./campfire";
 import { BED, BUILD_PALETTE, DOOR, WALL } from "./structures";
+import { DINO_PALETTE, MEAT_ICON } from "./dinos";
 
 /**
  * แผนที่ภาพใน asset pack ของ Pixel-boy (CC0) — บอกว่าช่องไหนใน tileset คืออะไร
@@ -81,6 +82,7 @@ export const TEX = {
   campfire: "campfire", // วาดเองใน BootScene (2 เฟรม)
   structure: (kind: string) => `structure-${kind}`, // กำแพง/ประตู/ที่นอน วาดเองใน BootScene
   bag: "drop-bag",
+  dino: (kind: string) => `dino-${kind}`, // วาดเองใน BootScene (2 เฟรม)
 };
 
 /** พุ่มไม้ผลไม้ (ทรัพยากร) และตอไม้ (ต้นไม้ที่ถูกตัดหมด) */
@@ -109,6 +111,9 @@ export const ITEM_ICONS: Record<ItemId, Icon> = {
   wall: { kind: "pixels", rows: WALL, palette: BUILD_PALETTE },
   door: { kind: "pixels", rows: DOOR, palette: BUILD_PALETTE },
   bed: { kind: "pixels", rows: BED, palette: BUILD_PALETTE },
+  meat: { kind: "pixels", rows: MEAT_ICON, palette: DINO_PALETTE },
+  steak: { kind: "file", path: "items/beaf.png" },
+  spear: { kind: "file", path: "items/lance.png" },
 };
 
 /** ไอคอนค่าสถานะ */

@@ -1,10 +1,12 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { isWorldCode } from "@primal/shared";
+import type { SavedDino } from "../rooms/dinoSystem.js";
 
 /** ข้อมูลโลกที่บันทึกลงไฟล์ (เวลาเก็บเป็น "อีกกี่ ms" เพราะนาฬิกาห้องเริ่มนับใหม่ทุกครั้งที่เปิด) */
 export interface WorldSave {
-  version: 1;
+  /** 1 = ขั้นที่ 5 (ไม่มีไดโน) · 2 = ขั้นที่ 6 */
+  version: 1 | 2;
   code: string;
   seed: number;
   savedAt: number;
@@ -13,6 +15,8 @@ export interface WorldSave {
   drops: { tx: number; ty: number; expiresInMs: number; items: Record<string, number> }[];
   /** key = token ของผู้เล่น */
   players: Record<string, SavedPlayer>;
+  /** ไม่มี (ไฟล์ version 1) = เกิดไดโนใหม่ตอนเปิด */
+  dinos?: SavedDino[];
 }
 
 export interface SavedPlayer {
@@ -37,8 +41,9 @@ const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object
 
 /** ไฟล์มีโครงตรงตามที่ห้องจะอ่านไหม (ไฟล์ที่แก้มือ/บั๊กในอนาคต ห้ามทำห้องพังกลางการโหลด) */
 function isWorldSave(d: unknown, code: string): d is WorldSave {
-  if (!isObj(d) || d.version !== 1 || d.code !== code || !isNum(d.seed)) return false;
-  const { nodes, structures, drops, players } = d;
+  if (!isObj(d) || (d.version !== 1 && d.version !== 2) || d.code !== code || !isNum(d.seed)) return false;
+  const { nodes, structures, drops, players, dinos } = d;
+  if (dinos !== undefined && !(Array.isArray(dinos) && dinos.every(isSavedDino))) return false;
   if (!Array.isArray(nodes) || !Array.isArray(structures) || !Array.isArray(drops) || !isObj(players)) return false;
   return (
     nodes.every((n) => isObj(n) && typeof n.id === "string" && isNum(n.hp) && isNum(n.regrowInMs)) &&
@@ -47,6 +52,13 @@ function isWorldSave(d: unknown, code: string): d is WorldSave {
     Object.values(players).every(
       (p) => isObj(p) && isNum(p.x) && isNum(p.y) && isNum(p.health) && isNum(p.hunger) && isNum(p.thirst) && isNum(p.colorIndex) && isObj(p.inventory),
     )
+  );
+}
+
+function isSavedDino(x: unknown): boolean {
+  return (
+    isObj(x) && typeof x.kind === "string" && isNum(x.x) && isNum(x.y) && isNum(x.hp) && isNum(x.homeX) && isNum(x.homeY) &&
+    typeof x.owner === "string" && typeof x.ownerName === "string"
   );
 }
 

@@ -13,6 +13,8 @@ export type ItemAction = "eat" | "place";
 const ACTIONS: Partial<Record<ItemId, ItemAction>> = {
   berry: "eat",
   roast: "eat",
+  meat: "eat",
+  steak: "eat",
   campfire: "place",
   wall: "place",
   door: "place",

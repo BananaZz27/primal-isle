@@ -282,6 +282,22 @@ input {
   touch-action: none;
 }
 
+/* ปุ่มป้อนไดโน 🍖: เหนือปุ่ม ✋ (ขึ้นเฉพาะตอนป้อนได้) */
+.feed-button {
+  position: absolute;
+  right: max(30px, env(safe-area-inset-right));
+  bottom: max(104px, env(safe-area-inset-bottom));
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  font-size: 26px;
+  background: #e8607add;
+  touch-action: none;
+}
+.feed-button[hidden] {
+  display: none;
+}
+
 /* ---------- ข้อความสั้นกลางจอ ---------- */
 .toast {
   position: absolute;

@@ -1,11 +1,13 @@
 import Phaser from "phaser";
-import { BALANCE, inReach, nodeDef, TILE_SIZE, touchesWater, type Decor, type WorldMap } from "@primal/shared";
+import { BALANCE, dinoDef, dinoInReach, inReach, isDinoKind, nodeDef, TILE_SIZE, touchesWater, type Decor, type WorldMap } from "@primal/shared";
+import type { DinoOnScreen } from "./feed";
 import { el, uiRoot } from "../ui/dom";
 import { RepeatGate } from "./repeatGate";
 import { nearestInReach } from "./building";
 
 export type Target =
   | { kind: "drop"; key: string }
+  | { kind: "dino"; key: string }
   | { kind: "node"; id: number }
   | { kind: "campfire" }
   | { kind: "water" }
@@ -14,9 +16,10 @@ export type Target =
 /**
  * เลือกสิ่งที่จะโต้ตอบเมื่อกดปุ่ม ตามลำดับ:
  * 0) ถุงของที่ตกอยู่ในระยะ (เก็บคืนก่อนอย่างอื่น)
- * 1) ทรัพยากรที่ใกล้ที่สุดในระยะเอื้อม (ที่ยังไม่หมด)
- * 2) กองไฟในระยะ — เฉพาะเมื่อมีผลไม้ให้ย่าง
- * 3) น้ำในระยะ = ดื่ม · ไม่มีอะไรเลย → null
+ * 1) ไดโนป่าที่ใกล้ที่สุดในระยะ (ตี) — ตัวที่เทมแล้วไม่นับ
+ * 2) ทรัพยากรที่ใกล้ที่สุดในระยะเอื้อม (ที่ยังไม่หมด)
+ * 3) กองไฟในระยะ — เฉพาะเมื่อมีของให้ย่าง (ผลไม้/เนื้อ)
+ * 4) น้ำในระยะ = ดื่ม · ไม่มีอะไรเลย → null
  */
 export function pickTarget(
   px: number,
@@ -25,11 +28,20 @@ export function pickTarget(
   map: WorldMap,
   isDepleted: (id: number) => boolean,
   campfires: { tx: number; ty: number }[] = [],
-  hasBerry = false,
+  canCook = false,
   drops: { key: string; tx: number; ty: number }[] = [],
+  dinos: DinoOnScreen[] = [],
 ): Target {
   const bag = nearestInReach(px, py, drops);
   if (bag) return { kind: "drop", key: bag.key };
+
+  let prey: { key: string; dist: number } | null = null;
+  for (const d of dinos) {
+    if (d.owner !== "" || !isDinoKind(d.kind) || !dinoInReach(px, py, d.x, d.y, dinoDef(d.kind).half)) continue;
+    const dist = Math.hypot(px - d.x, py - d.y);
+    if (!prey || dist < prey.dist) prey = { key: d.key, dist };
+  }
+  if (prey) return { kind: "dino", key: prey.key };
 
   let best: { id: number; dist: number } | null = null;
   decor.forEach((d, id) => {
@@ -38,7 +50,7 @@ export function pickTarget(
     if (!best || dist < best.dist) best = { id, dist };
   });
   if (best) return { kind: "node", id: (best as { id: number }).id };
-  if (hasBerry && campfires.some((c) => inReach(px, py, c.tx, c.ty))) return { kind: "campfire" };
+  if (canCook && campfires.some((c) => inReach(px, py, c.tx, c.ty))) return { kind: "campfire" };
   return touchesWater(map, px, py) ? { kind: "water" } : null;
 }
 

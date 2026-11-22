@@ -1,6 +1,8 @@
 import {
   BALANCE,
+  dinoDef,
   inPlaceReach,
+  isDinoKind,
   inReach,
   isStructureKind,
   placeCheck,
@@ -20,6 +22,7 @@ import { setCount } from "./survivalSystem.js";
 export class BuildingSystem {
   private occupied: Set<number>;
   private solidTiles = new Set<number>();
+  private doorTiles = new Set<number>();
   private nextStructure = 0;
   /** เจ้าของของแต่ละชิ้น (token) — เก็บนอก state เพื่อไม่ให้ส่งออกทางเน็ต */
   private owners = new Map<Structure, string>();
@@ -35,6 +38,9 @@ export class BuildingSystem {
     this.occupied = new Set(decor.map((d) => this.key(d.tx, d.ty)));
   }
 
+  /** ช่องนี้มีประตูไหม (คนเดินผ่านได้ ไดโนป่าผ่านไม่ได้) */
+  readonly door = (tx: number, ty: number): boolean => this.doorTiles.has(this.key(tx, ty));
+
   /** ช่องนี้มีกำแพงไหม (รวมกับการชนของทรัพยากรในห้อง) */
   readonly solid = (tx: number, ty: number): boolean => this.solidTiles.has(this.key(tx, ty));
 
@@ -47,7 +53,11 @@ export class BuildingSystem {
       map: this.map,
       occupied: (x: number, y: number) => this.occupied.has(this.key(x, y)),
       structures: [...this.state.structures.values()],
-      players: [...this.state.players.values()],
+      // ห้ามวางทับคนหรือไดโน (จะติดในกำแพง)
+      players: [
+        ...this.state.players.values(),
+        ...[...this.state.dinos.values()].filter((d) => isDinoKind(d.kind)).map((d) => ({ x: d.x, y: d.y, half: dinoDef(d.kind as never).half })),
+      ],
     };
     if (!placeCheck(world, player, item, tx, ty)) return;
 
@@ -127,6 +137,7 @@ export class BuildingSystem {
     this.owners.set(s, owner);
     this.state.structures.set(String(this.nextStructure++), s);
     if (isStructureKind(kind) && STRUCTURE_DEFS[kind].solid) this.solidTiles.add(this.key(tx, ty));
+    if (kind === "door") this.doorTiles.add(this.key(tx, ty));
   }
 
   private remove(key: string, refundTo: Player) {
@@ -135,6 +146,7 @@ export class BuildingSystem {
     this.state.structures.delete(key);
     this.owners.delete(s);
     this.solidTiles.delete(this.key(s.tx, s.ty));
+    this.doorTiles.delete(this.key(s.tx, s.ty));
     const item = s.kind as ItemId;
     setCount(refundTo, item, Math.min(BALANCE.stackMax, (refundTo.inventory.get(item) ?? 0) + 1));
   }
