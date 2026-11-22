@@ -38,6 +38,8 @@ export interface DinoView {
   owner: { x: number; y: number } | null;
   /** ศัตรูของเจ้าของ (เพิ่งตีเจ้าของ หรือเจ้าของเพิ่งตี) */
   ownerFoe: Ref | null;
+  /** ตัวคูณระยะไล่ (กลางคืน = nightAggroMul) — ไม่ใส่ = 1 */
+  aggroMul?: number;
 }
 
 export interface DinoIntent {
@@ -117,8 +119,13 @@ function thinkWild(b: DinoBrain, view: DinoView, now: number, rand: () => number
   const home = { x: b.homeX, y: b.homeY };
 
   // กำลังกลับบ้าน (เลิกไล่เพราะไกลบ้าน) — ไม่สนใครจนถึงบ้าน
+  // กลับไม่ถึงในเวลา (เช่น มีกำแพง/น้ำขวาง) → เลิกดื้อ แล้วถือว่าที่นี่เป็นบ้านใหม่
   if (b.mode === "home") {
-    if (dist(b, home) > BALANCE.dinoWanderPx) return toward(b, home, def.speed);
+    if (dist(b, home) > BALANCE.dinoWanderPx && now < b.until) return toward(b, home, def.speed);
+    if (now >= b.until) {
+      b.homeX = home.x = b.x;
+      b.homeY = home.y = b.y;
+    }
     b.mode = "idle";
     b.until = now;
   }
@@ -141,7 +148,7 @@ function thinkWild(b: DinoBrain, view: DinoView, now: number, rand: () => number
   let targetHalf = ref?.type === "dino" ? (view.dinos.find((d) => d.id === ref!.id)?.half ?? 0) : 0;
   if (!pos && def.temper === "aggressive") {
     const near = nearest(b, view.players);
-    if (near && dist(b, near) <= def.aggroPx) {
+    if (near && dist(b, near) <= def.aggroPx * (view.aggroMul ?? 1)) {
       ref = { type: "player", id: near.id };
       pos = near;
       targetHalf = 0;
@@ -151,6 +158,7 @@ function thinkWild(b: DinoBrain, view: DinoView, now: number, rand: () => number
     if (dist(b, home) > BALANCE.dinoLeashPx) {
       // ไกลบ้านเกินไป: เลิกไล่ แล้วเดินกลับ
       b.mode = "home";
+      b.until = now + BALANCE.homeTimeoutMs;
       b.target = null;
       b.angryUntil = 0;
       return toward(b, home, def.speed);

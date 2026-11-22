@@ -13,3 +13,4 @@ export * from "./rules/crafting";
 export * from "./rules/building";
 export * from "./rules/dinos";
 export * from "./ai/dinoBrain";
+export * from "./rules/living";
