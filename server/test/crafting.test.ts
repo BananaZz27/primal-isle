@@ -138,7 +138,7 @@ describe("crafting", () => {
     }
     expect(room.state.structures.size).toBe(BALANCE.maxStructures);
     expect(p.inventory.get("campfire")).toBe(99 - BALANCE.maxStructures);
-  });
+  }, 20000); // ส่งข้อความ ~60 รอบ — เครื่อง CI ช้ากว่า จึงให้เวลามากกว่าค่าเริ่มต้น 5 วิ
 
   it("cooking next to a campfire turns a berry into roast; far away or no berry → nothing", async () => {
     const { p, send } = await setup({ campfire: 1, berry: 1 });
