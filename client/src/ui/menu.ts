@@ -26,7 +26,8 @@ export function showMenu(opts: MenuOptions): MenuHandle {
   const codeInput = el("input");
   codeInput.placeholder = "รหัสโลกของเพื่อน";
   codeInput.value = opts.inviteCode ?? "";
-  codeInput.autocapitalize = "off";
+  codeInput.autocapitalize = "characters";
+  codeInput.maxLength = 6;
   codeInput.spellcheck = false;
 
   const createBtn = el("button", { text: "🏝️ สร้างโลกใหม่" });

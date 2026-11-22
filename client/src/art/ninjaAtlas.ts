@@ -1,5 +1,6 @@
 import type { ItemId } from "@primal/shared";
 import { CAMPFIRE_FRAMES, CAMPFIRE_PALETTE } from "./campfire";
+import { BED, BUILD_PALETTE, DOOR, WALL } from "./structures";
 
 /**
  * แผนที่ภาพใน asset pack ของ Pixel-boy (CC0) — บอกว่าช่องไหนใน tileset คืออะไร
@@ -78,6 +79,8 @@ export const TEX = {
   tree: (i: number) => `tree-${i}`,
   survivor: (id: string) => `survivor-${id}`,
   campfire: "campfire", // วาดเองใน BootScene (2 เฟรม)
+  structure: (kind: string) => `structure-${kind}`, // กำแพง/ประตู/ที่นอน วาดเองใน BootScene
+  bag: "drop-bag",
 };
 
 /** พุ่มไม้ผลไม้ (ทรัพยากร) และตอไม้ (ต้นไม้ที่ถูกตัดหมด) */
@@ -103,6 +106,9 @@ export const ITEM_ICONS: Record<ItemId, Icon> = {
   hammer: { kind: "file", path: "items/hammer.png" },
   campfire: { kind: "pixels", rows: CAMPFIRE_FRAMES[0], palette: CAMPFIRE_PALETTE },
   roast: { kind: "file", path: "items/yakitori.png" },
+  wall: { kind: "pixels", rows: WALL, palette: BUILD_PALETTE },
+  door: { kind: "pixels", rows: DOOR, palette: BUILD_PALETTE },
+  bed: { kind: "pixels", rows: BED, palette: BUILD_PALETTE },
 };
 
 /** ไอคอนค่าสถานะ */

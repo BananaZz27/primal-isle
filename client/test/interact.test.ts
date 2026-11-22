@@ -72,6 +72,14 @@ describe("pickTarget with a campfire", () => {
   });
 });
 
+describe("pickTarget with a dropped bag", () => {
+  const map = island();
+  it("a bag in reach comes before everything else", () => {
+    const p = at(3, 3);
+    expect(pickTarget(p.x, p.y, [node(DecorKind.Tree, 4, 3)], map, () => false, [], false, [{ key: "b1", tx: 3, ty: 4 }])).toEqual({ kind: "drop", key: "b1" });
+  });
+});
+
 describe("barPercent", () => {
   it("clamps and rounds", () => {
     expect(barPercent(55.4)).toBe(55);

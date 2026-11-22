@@ -11,6 +11,8 @@ import { PlayerSprites } from "../render/players";
 import { ResourceView } from "../render/resourceNodes";
 import { StructureView } from "../render/structures";
 import { CraftPanel } from "../ui/craftPanel";
+import { el } from "../ui/dom";
+import { frontTile, nearestInReach } from "../input/building";
 import { buildTilemap } from "../render/tilemap";
 import { showConnectionLost, showReconnecting } from "../ui/hud";
 import { InventoryHud } from "../ui/inventory";
@@ -54,7 +56,10 @@ export class WorldScene extends Phaser.Scene {
     const resources = new ResourceView(this, decor, this.room);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => resources.destroy());
     // ต้นไม้/หินที่ยังไม่ถูกเก็บหมดเป็นของแข็ง — ใช้สถานะจากเซิร์ฟเวอร์ (ตัวเดียวกับที่เซิร์ฟเวอร์ใช้ชน)
-    const solid = solidFromNodes(map, decor, (id) => this.room.state.nodes.get(String(id))?.hp === 0);
+    const resourceSolid = solidFromNodes(map, decor, (id) => this.room.state.nodes.get(String(id))?.hp === 0);
+    const structures = new StructureView(this, this.room);
+    // ชน = ต้นไม้/หินที่ยังอยู่ + กำแพง (ตัวเดียวกับที่เซิร์ฟเวอร์ใช้)
+    const solid = (tx: number, ty: number) => resourceSolid(tx, ty) || structures.solid(tx, ty);
 
     const worldPx = map.size * TILE_SIZE;
     const cam = this.cameras.main;
@@ -71,22 +76,40 @@ export class WorldScene extends Phaser.Scene {
 
     // โต้ตอบ: หาสิ่งที่ใกล้ที่สุดจากตำแหน่งที่เห็นบนจอ แล้วขอเซิร์ฟเวอร์ (เซิร์ฟเวอร์ตรวจซ้ำเสมอ)
     const isDepleted = (id: number) => this.room.state.nodes.get(String(id))?.hp === 0;
-    const structures = new StructureView(this, this.room);
+    const myPos = () => {
+      const me = this.room.state.players.get(this.room.sessionId);
+      return me ? this.prediction.pos(me) : null;
+    };
     this.interact = new InteractControls(this, TouchJoystick.wanted(), () => {
       const me = this.room.state.players.get(this.room.sessionId);
       if (!me || !this.connected) return;
       const { x, y } = this.prediction.pos(me);
       const hasBerry = (me.inventory.get("berry") ?? 0) > 0;
-      const target = pickTarget(x, y, decor, map, isDepleted, structures.campfires(), hasBerry);
-      if (target?.kind === "node") this.room.send("gather", { node: target.id });
+      const target = pickTarget(x, y, decor, map, isDepleted, structures.campfires(), hasBerry, structures.bagList());
+      if (target?.kind === "drop") this.room.send("pickup", { key: target.key });
+      else if (target?.kind === "node") this.room.send("gather", { node: target.id });
       else if (target?.kind === "campfire") this.room.send("cook", {});
       else if (target?.kind === "water") this.room.send("drink", {});
     });
     this.statsHud = new StatsHud();
-    this.inventoryHud = new InventoryHud((item, action) =>
-      action === "eat" ? this.room.send("eat", { item }) : this.room.send("place", { item }),
-    );
+    this.inventoryHud = new InventoryHud((item, action) => {
+      if (action === "eat") return this.room.send("eat", { item });
+      // วางที่ช่องหน้าตัวละคร (ตามทิศที่หัน) — เซิร์ฟเวอร์ตรวจว่าวางได้จริงไหม
+      const pos = myPos();
+      if (!pos) return;
+      const { tx, ty } = frontTile(pos.x, pos.y, this.players.facingOf(this.room.sessionId));
+      this.room.send("place", { item, tx, ty });
+    });
     this.craftPanel = new CraftPanel(this.inventoryHud.element, (recipe) => this.room.send("craft", { recipe }));
+    // ปุ่มรื้อ: รื้อสิ่งก่อสร้างที่ใกล้ที่สุดในระยะ (ได้ของคืน)
+    const demolish = el("button", { className: "craft-toggle", text: "🪓" });
+    demolish.title = "รื้อสิ่งก่อสร้างที่ใกล้ที่สุด";
+    demolish.addEventListener("click", () => {
+      const pos = myPos();
+      const target = pos && nearestInReach(pos.x, pos.y, structures.all());
+      if (target) this.room.send("demolish", { key: target.key });
+    });
+    this.inventoryHud.element.append(demolish);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       structures.destroy();
       this.craftPanel.destroy();

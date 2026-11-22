@@ -10,10 +10,17 @@ const ALWAYS: ReadonlySet<ItemId> = new Set(["wood", "stone", "berry", "fiber"])
 
 /** แตะของชนิดนี้แล้วทำอะไร */
 export type ItemAction = "eat" | "place";
-const ACTIONS: Partial<Record<ItemId, ItemAction>> = { berry: "eat", roast: "eat", campfire: "place" };
-const ACTION_HINT: Record<ItemAction, string> = { eat: "แตะเพื่อกิน", place: "แตะเพื่อวางตรงที่ยืน" };
+const ACTIONS: Partial<Record<ItemId, ItemAction>> = {
+  berry: "eat",
+  roast: "eat",
+  campfire: "place",
+  wall: "place",
+  door: "place",
+  bed: "place",
+};
+const ACTION_HINT: Record<ItemAction, string> = { eat: "แตะเพื่อกิน", place: "แตะเพื่อวางช่องหน้าตัว" };
 
-/** กระเป๋าตรงกลางล่าง: ไอคอน + จำนวน · แตะของกิน = กิน · แตะกองไฟ = วาง */
+/** กระเป๋าตรงกลางล่าง: ไอคอน + จำนวน · แตะของกิน = กิน · แตะสิ่งก่อสร้าง = วางช่องหน้าตัว */
 export class InventoryHud {
   private root = el("div", { className: "panel inventory" });
   private counts = new Map<ItemId, HTMLElement>();

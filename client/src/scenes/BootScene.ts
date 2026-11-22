@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { TILE_SIZE } from "@primal/shared";
 import { ASSET_ROOT, SURVIVOR_IDS, TEX, TREE_RECTS } from "../art/ninjaAtlas";
 import { CAMPFIRE_FRAMES, CAMPFIRE_PALETTE } from "../art/campfire";
+import { BAG, BED, BUILD_PALETTE, DOOR, WALL } from "../art/structures";
 import { paintTexture } from "../art/paint";
 import { CAMPFIRE_ANIM } from "../render/structures";
 import { registerSurvivorAnims } from "../render/survivorAnims";
@@ -40,6 +41,12 @@ export class BootScene extends Phaser.Scene {
     TREE_RECTS.forEach((r, i) => sheet.add(TEX.tree(i), 0, r.x, r.y, r.w, r.h));
 
     registerSurvivorAnims(this);
+
+    // กำแพง ประตู ที่นอน ถุงของ — วาดเอง
+    paintTexture(this, TEX.structure("wall"), [WALL], BUILD_PALETTE);
+    paintTexture(this, TEX.structure("door"), [DOOR], BUILD_PALETTE);
+    paintTexture(this, TEX.structure("bed"), [BED], BUILD_PALETTE);
+    paintTexture(this, TEX.bag, [BAG], BUILD_PALETTE);
 
     // กองไฟวาดเอง: แผ่นภาพ 2 เฟรมเรียงแนวนอน แล้วแบ่งเป็น frame 0/1 ให้ animation
     paintTexture(this, TEX.campfire, CAMPFIRE_FRAMES, CAMPFIRE_PALETTE);
