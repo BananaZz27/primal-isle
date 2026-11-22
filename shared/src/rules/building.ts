@@ -16,7 +16,8 @@ export interface PlaceWorld {
   /** ช่องนี้มีของตกแต่ง/ทรัพยากรอยู่ไหม */
   occupied: (tx: number, ty: number) => boolean;
   structures: { kind: string; tx: number; ty: number }[];
-  players: { x: number; y: number }[];
+  /** ตัวที่ยืนอยู่ (ผู้เล่น/ไดโน) — half = ครึ่งกล่องชน (ไม่ใส่ = ขนาดผู้เล่น) */
+  players: { x: number; y: number; half?: number }[];
 }
 
 /**
@@ -44,7 +45,7 @@ export function placeCheck(
     if (gap === 0) return false;
     if (gap === 1 && (kind === "campfire" || s.kind === "campfire")) return false;
   }
-  for (const p of w.players) if (hitboxTouches(p.x, p.y, x, y)) return false;
+  for (const p of w.players) if (hitboxTouches(p.x, p.y, x, y, p.half)) return false;
   return true;
 }
 
@@ -59,11 +60,11 @@ export function inPlaceReach(px: number, py: number, tx: number, ty: number): bo
 }
 
 /** กล่องชนของผู้เล่นที่ (px, py) ทับช่อง (tx, ty) ไหม — คณิตเดียวกับ stepPlayer */
-export function hitboxTouches(px: number, py: number, tx: number, ty: number): boolean {
-  const left = Math.floor((px - PLAYER_HALF) / TILE_SIZE);
-  const right = Math.floor((px + PLAYER_HALF) / TILE_SIZE);
-  const top = Math.floor((py - PLAYER_HALF) / TILE_SIZE);
-  const bottom = Math.floor((py + PLAYER_HALF) / TILE_SIZE);
+export function hitboxTouches(px: number, py: number, tx: number, ty: number, half = PLAYER_HALF): boolean {
+  const left = Math.floor((px - half) / TILE_SIZE);
+  const right = Math.floor((px + half) / TILE_SIZE);
+  const top = Math.floor((py - half) / TILE_SIZE);
+  const bottom = Math.floor((py + half) / TILE_SIZE);
   return tx >= left && tx <= right && ty >= top && ty <= bottom;
 }
 

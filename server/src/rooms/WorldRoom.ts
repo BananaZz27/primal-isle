@@ -20,6 +20,7 @@ import { StepBudget } from "./stepBudget.js";
 import { SurvivalSystem } from "./survivalSystem.js";
 import { CraftingSystem } from "./craftingSystem.js";
 import { BuildingSystem } from "./buildingSystem.js";
+import { DinoSystem } from "./dinoSystem.js";
 
 /** เวลาที่รอผู้เล่นที่เน็ตหลุดให้ต่อกลับมา (วินาที) */
 export const RECONNECT_SECONDS = 20;
@@ -58,6 +59,7 @@ export class WorldRoom extends Room<{ state: WorldState; input: MoveInput }> {
   private survival!: SurvivalSystem;
   private crafting!: CraftingSystem;
   private building!: BuildingSystem;
+  private dinos!: DinoSystem;
   /** ผู้เล่น → id เจ้าของ (token; ไม่มี token = ผู้เล่นชั่วคราว) */
   private owners = new Map<Player, string>();
   /** ค่าที่จำไว้ของผู้เล่นที่ไม่ได้ออนไลน์ (key = token) */
@@ -92,6 +94,9 @@ export class WorldRoom extends Room<{ state: WorldState; input: MoveInput }> {
     pickup: (client: Client, msg: unknown) =>
       this.withPlayer(client, (p) => this.building.pickup(p, msg, this.clock.currentTime)),
     cook: (client: Client) => this.withPlayer(client, (p) => this.crafting.cook(p)),
+    attack: (client: Client, msg: unknown) =>
+      this.withPlayer(client, (p) => this.dinos.attack(client.sessionId, p, msg, this.clock.currentTime)),
+    feed: (client: Client, msg: unknown) => this.withPlayer(client, (p) => this.dinos.feed(p, msg, this.clock.currentTime)),
   };
 
   async onCreate(options: WorldCreateOptions = {}) {
@@ -126,7 +131,23 @@ export class WorldRoom extends Room<{ state: WorldState; input: MoveInput }> {
       respawnPoint: (p) => this.building.bedFor(p),
     });
     this.crafting = new CraftingSystem(this.state);
+    this.dinos = new DinoSystem(
+      this.state,
+      this.map,
+      this.solid,
+      Array.from({ length: MAX_PLAYERS }, (_, i) => findSpawn(this.map, i)),
+      {
+        tokenOf: (p) => this.owners.get(p) ?? "",
+        playerByToken: (token) => {
+          const session = this.sessionOfToken(token);
+          return session === null ? null : (this.state.players.get(session) ?? null);
+        },
+        ready: (sessionId, now) => this.survival.ready(sessionId, now),
+        acted: (sessionId, now) => this.survival.acted(sessionId, now),
+      },
+    );
     if (save) this.restore(save);
+    if (process.env.WILD_DINOS !== "0") this.dinos.populate(this.clock.currentTime);
 
     this.setFixedTimestep((ctx) => this.step(ctx), TICK_RATE);
     this.clock.setInterval(() => void this.persist(), SAVE_EVERY_MS);
@@ -224,6 +245,7 @@ export class WorldRoom extends Room<{ state: WorldState; input: MoveInput }> {
       for (const input of batch) stepPlayer(player, input, ctx.dt, this.map, this.solid);
       this.budget.spend(sessionId, batch.length);
     }
+    this.dinos.tick(ctx.dt, this.clock.currentTime);
     this.survival.tick(ctx.dt, this.clock.currentTime);
     this.building.tick(this.clock.currentTime);
   }
@@ -241,7 +263,14 @@ export class WorldRoom extends Room<{ state: WorldState; input: MoveInput }> {
     try {
       await getWorldStore().save(
         this.code,
-        snapshotWorld(this.code, this.state, this.clock.currentTime, players, (s) => this.building.structureOwner(s)),
+        snapshotWorld(
+          this.code,
+          this.state,
+          this.clock.currentTime,
+          players,
+          (s) => this.building.structureOwner(s),
+          this.dinos.snapshot(),
+        ),
       );
     } catch (err) {
       console.error(`save failed for world ${this.code}:`, err); // บันทึกไม่ได้ไม่ควรทำให้เกมล่ม
@@ -259,6 +288,7 @@ export class WorldRoom extends Room<{ state: WorldState; input: MoveInput }> {
       this.state.drops.set(`r${i}`, drop);
     });
     this.savedPlayers = { ...save.players };
+    this.dinos.restore(save.dinos ?? [], now);
   }
 
   /** เรียกงานกับผู้เล่นของ client นี้ (ถ้ายังอยู่ในห้อง) */

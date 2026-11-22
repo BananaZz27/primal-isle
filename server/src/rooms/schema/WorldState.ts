@@ -63,6 +63,23 @@ export const Drop = schema({
 });
 export type Drop = SchemaType<typeof Drop>;
 
+/**
+ * ไดโน 1 ตัว — เซิร์ฟเวอร์เดินและคิดให้ (สมอง/เจ้าของตัวจริงเก็บใน DinoSystem ไม่ซิงก์)
+ * owner = ชื่อที่แสดงของเจ้าของ ("" = ไดโนป่า) — ห้ามใส่ token
+ */
+export const Dino = schema({
+  kind: t.string(),
+  x: t.number(),
+  y: t.number(),
+  hp: t.uint16(),
+  /** 0 ปกติ · 1 กำลังหนี · 2 กำลังไล่/โกรธ */
+  mood: t.uint8(),
+  owner: t.string(),
+  /** -1 หันซ้าย · 1 หันขวา */
+  facing: t.int8(),
+});
+export type Dino = SchemaType<typeof Dino>;
+
 export const WorldState = schema({
   seed: t.uint32(),
   players: t.map(Player),
@@ -72,5 +89,7 @@ export const WorldState = schema({
   structures: t.map(Structure),
   /** key = เลขลำดับ (ข้อความ) */
   drops: t.map(Drop),
+  /** key = เลขลำดับ (ข้อความ) */
+  dinos: t.map(Dino),
 });
 export type WorldState = SchemaType<typeof WorldState>;

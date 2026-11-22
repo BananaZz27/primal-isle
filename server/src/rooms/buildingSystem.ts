@@ -1,6 +1,8 @@
 import {
   BALANCE,
+  dinoDef,
   inPlaceReach,
+  isDinoKind,
   inReach,
   isStructureKind,
   placeCheck,
@@ -47,7 +49,11 @@ export class BuildingSystem {
       map: this.map,
       occupied: (x: number, y: number) => this.occupied.has(this.key(x, y)),
       structures: [...this.state.structures.values()],
-      players: [...this.state.players.values()],
+      // ห้ามวางทับคนหรือไดโน (จะติดในกำแพง)
+      players: [
+        ...this.state.players.values(),
+        ...[...this.state.dinos.values()].filter((d) => isDinoKind(d.kind)).map((d) => ({ x: d.x, y: d.y, half: dinoDef(d.kind as never).half })),
+      ],
     };
     if (!placeCheck(world, player, item, tx, ty)) return;
 
