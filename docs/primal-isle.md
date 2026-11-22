@@ -1,6 +1,6 @@
 # Primal Isle — สรุปโปรเจกต์ (อ่านไฟล์นี้ก่อนเริ่มแชตใหม่)
 
-> อัปเดต: 2026-11-21 · เขียนทับทุกครั้งที่จบรอบงาน
+> อัปเดต: 2026-11-22 · เขียนทับทุกครั้งที่จบรอบงาน
 
 ## คืออะไร
 เกมเอาชีวิตรอดออนไลน์แนว Durango: Wild Lands (คนยุคปัจจุบันติดเกาะไดโนเสาร์) มุมมองจากด้านบน ภาพพิกเซล
@@ -10,56 +10,48 @@
 ## สิ่งที่ตัดสินใจแล้ว
 - Stack: TypeScript ทั้งระบบ · Phaser 4.2 (client) · Colyseus 0.18 (server) · Vite · Vitest · npm workspaces
 - โครงสร้าง: `shared/` กติกาเกม pure function · `server/` ห้อง `world` (server authoritative) · `client/` หน้าจอ
-- แผนที่ไม่ส่งทางเน็ต: ทั้งสองฝั่งสร้างจาก `seed` ด้วย `generateWorld` · ซิงก์เฉพาะสิ่งที่เปลี่ยน
-- Netcode: fixed timestep 20Hz + `defineInput` (server) · `Predict` reconciler + lerp (client) · `stepPlayer` ตัวเดียวใช้ทั้งสองฝั่ง
-- รหัสโลก = `roomId` ของ Colyseus · ลิงก์เชิญ `?w=<รหัส>`
-- ภาพ: asset CC0 ของ Pixel-boy (`client/public/assets/ninja-adventure/`, ที่มาใน `CREDITS.md`) · แผนที่ช่องภาพอยู่ที่ `client/src/art/ninjaAtlas.ts` · tileset ของเราเติมแถว 41 (ทรายเรียบ)
-- ค่าคงที่ทั้งหมดอยู่ที่ `shared/src/constants.ts`
+- แผนที่ไม่ส่งทางเน็ต: ทั้งสองฝั่งสร้างจาก `seed` · ทรัพยากร = ของตกแต่งจาก seed (id = ลำดับใน `generateDecor`)
+- Netcode: fixed timestep 20Hz + `defineInput` (server) · `Predict` reconciler (client) · `stepPlayer` ตัวเดียวใช้ทั้งสองฝั่ง · `stepBudget` กันโกงความเร็ว
+- ตัวเลขสมดุลทั้งหมด: `shared/src/data/balance.json` · ค่าคงที่: `shared/src/constants.ts`
+- ภาพ: asset CC0 ของ Pixel-boy (`client/public/assets/ninja-adventure/`) + ภาพวาดเองด้วยโค้ด (`client/src/art/structures.ts`, `campfire.ts`)
+- **บันทึกโลก (ขั้นที่ 5):** ไฟล์ JSON ต่อโลก `server/data/worlds/<รหัส>.json` (เปลี่ยนที่ด้วย `DATA_DIR`) ผ่าน interface `WorldStore` — เปลี่ยนเป็นฐานข้อมูลทีหลังได้โดยไม่แตะห้อง · บันทึกทุก 30 วิ, ตอนห้องปิด, และตอน Ctrl+C
+- รหัสโลกถาวร 6 ตัว (ไม่มี 0/O/1/I) = `roomId` · เข้ารหัสที่ไม่มีห้องเปิด → เปิดห้องจากไฟล์บันทึก
+- token จำตัวผู้เล่น: สุ่มในเบราว์เซอร์ เก็บใน localStorage `primal-isle:token` · token เดียวกันเข้าซ้อนสองแท็บไม่ได้
+- วางของ: ช่องหน้าตัวนับจากขอบกล่องชน (`client/src/input/building.ts` `frontTile`) · ระยะวาง `placeReach` 32px (เก็บของ 24px)
 
 ## สถานะ
-- ✅ ขั้นที่ 1–2 เสร็จ: สร้างโลก/เข้าโลก, เดินด้วยกัน, joystick มือถือ, หน้าหมุนจอ
-- ✅ เน็ตสะดุด: เซิร์ฟเวอร์เก็บตัวละครไว้ 20 วิ, client ขึ้น "กำลังเชื่อมต่อใหม่…" ทันทีแล้วต่อกลับเอง
-- ✅ ขั้นที่ 4 คราฟต์: สูตร/ตัวเลขใน `balance.json` (`recipes`, `toolYield`, `roastFood`, `maxStructures`), กติกา `shared/src/rules/crafting.ts`, เซิร์ฟเวอร์ `server/src/rooms/craftingSystem.ts` (ข้อความ `craft/place/cook`), `state.structures` (กองไฟ), หน้าคราฟต์ `client/src/ui/craftPanel.ts`, กองไฟวาดเอง `client/src/art/campfire.ts`
-- ✅ ขั้นที่ 3 เอาชีวิตรอด: ทรัพยากร = ของตกแต่งจาก seed (id = ลำดับใน `generateDecor`), ต้นไม้/หินชนได้, ระบบใน `server/src/rooms/survivalSystem.ts`, ตัวเลขสมดุลใน `shared/src/data/balance.json`, ข้อความ `gather/eat/drink`, HUD ใน `client/src/ui/{stats,inventory}.ts`, ปุ่มโต้ตอบ `client/src/input/interact.ts`
-- ✅ ภาพใหม่: ชายฝั่งเลือกภาพขอบตามทิศที่ติดบก (`client/src/art/groundFrames.ts`), ของตกแต่งจาก seed (`shared/src/world/decor.ts`), ตัวละคร 8 แบบเดินมีท่า 4 ทิศ · 60 FPS ใน headless Chrome ขนาดจอมือถือ (ยังไม่ได้วัดบนมือถือจริง) · โหลดภาพไม่ขึ้น = ขึ้นปุ่ม "โหลดใหม่"
-- ✅ กันโกงความเร็ว: `server/src/rooms/stepBudget.ts` ใช้ input ได้ไม่เกินโควตาต่อ tick
-- เทสต์: shared 59 · server 37 (รวม e2e ด้วย SDK จริง) · client 86 · ทดสอบใน headless Chrome: เดินไปเก็บของ, joystick + ปุ่ม ✋ พร้อมกันบนมือถือ · CI บน GitHub เขียว · ทดสอบใน headless Chrome แล้ว (2–3 ผู้เล่น, touch, เน็ตหลุด/ต่อกลับ, พิมพ์หลังกลับเมนู)
+- ✅ ขั้นที่ 1–2 เดินด้วยกัน · ✅ ภาพ Pixel-boy · ✅ ขั้นที่ 3 เอาชีวิตรอด · ✅ ขั้นที่ 4 คราฟต์/กองไฟ
+- ✅ ขั้นที่ 5 (branch `m5-base`): กำแพง (ชนได้) ประตู ที่นอน (ฟื้นที่ที่นอน, คนละ 1 อัน), รื้อได้ของคืน, ตายแล้วทิ้งถุงของ (หาย 15 นาที), บันทึก/โหลดโลก, token
+- ทดสอบในเบราว์เซอร์ (headless Chrome): ตีต้นไม้ → คราฟต์กำแพง → วาง → Ctrl+C เซิร์ฟเวอร์ → เปิดใหม่ → ใส่รหัสเดิม = กำแพงและของในกระเป๋ากลับมาครบ (ผ่าน 2 รอบติด)
+- เทสต์: shared 76 · server 50 · client 94 · CI บน GitHub
 - เล่นได้เฉพาะ Wi-Fi เดียวกัน (เซิร์ฟเวอร์รันบนคอมโบ๊ท)
 
 ## ไฟล์สำคัญ
 | ไฟล์ | หน้าที่ |
 |---|---|
-| `shared/src/world/generate.ts` | สร้างเกาะจาก seed |
-| `shared/src/movement/step.ts` | การเดิน + ชนน้ำ (ใช้ทั้ง server/client) |
-| `server/src/rooms/WorldRoom.ts` | ห้องเกม: เข้า/ออก/เดิน |
-| `server/src/rooms/schema/WorldState.ts` | ข้อมูลที่ซิงก์ (Player, MoveInput) |
+| `shared/src/rules/building.ts` | กติกาการวาง `placeCheck`, รหัสโลก, token |
+| `shared/src/rules/{survival,crafting,resources}.ts` | ค่าสถานะ, สูตรคราฟต์, ทรัพยากร |
+| `server/src/rooms/WorldRoom.ts` | ห้องเกม: สร้าง/เปิดจากไฟล์, เข้า/ออก, ข้อความ, บันทึก |
+| `server/src/rooms/{survival,crafting,building}System.ts` | ระบบแยกตามหน้าที่ |
+| `server/src/persistence/{worldStore,snapshot}.ts` | อ่าน/เขียนไฟล์บันทึก, แปลง state ↔ ไฟล์ |
+| `server/src/rooms/schema/WorldState.ts` | ข้อมูลที่ซิงก์ (Player, NodeState, Structure, Drop) |
 | `client/src/scenes/WorldScene.ts` | ต่อชิ้นส่วนในเกม |
-| `client/src/net/prediction.ts` | ระบบทำนายการเดิน |
-| `client/src/ui/menu.ts` | เมนูสร้าง/เข้าโลก |
-| `shared/src/world/decor.ts` | ตำแหน่งต้นไม้/ดอกไม้/หินจาก seed (ขั้นที่ 3 จะทำให้ตัด/เก็บได้) |
-| `client/src/art/ninjaAtlas.ts` | ช่องไหนใน tileset คืออะไร |
+| `client/src/net/{connection,token,errors}.ts` | เข้าโลก, token, ข้อความ error ภาษาไทย |
+| `client/src/render/structures.ts` | วาดสิ่งก่อสร้าง + ถุงของ |
 
 ## บั๊ก/ข้อจำกัดที่ยังเปิดอยู่
-- ยังไม่มีระบบบันทึกโลก: ทุกคนออก = ห้องหายและเกาะหายไปด้วย (ทำในขั้นที่ 5)
-- ยังไม่มี token จำตัวผู้เล่น: เข้าใหม่ = ตัวใหม่ (ทำในขั้นที่ 5)
+- กล่องเก็บของ (chest) ยังไม่มี — เลื่อนไปขั้นที่ 7
+- `npm run watch -w server` (รีสตาร์ทเองเมื่อแก้โค้ด) กด Ctrl+C แล้วอาจไม่ทันบันทึก — ใช้ `npm run dev:server` ตอนเล่นจริง
+- กระเป๋า/ค่าสถานะทุกคนในห้องมองเห็นได้ทาง state · ยังไม่จำกัดจำนวนข้อความต่อวินาที
 - ไฟล์ JS ของ client ~1.5 MB (Phaser) — ค่อยแบ่งโหลดตอนทำ PWA ขั้นที่ 6
-- (เล็ก) สีเสื้อ/จุดเกิดซ้ำกันได้ถ้าเคยมีคนเข้าครบ 8 แล้วมีคนออก-เข้าใหม่
-- (เล็ก) joystick อาจค้างถ้าเบราว์เซอร์พักแอปกลางการลากนิ้ว
-- (เล็ก) เมนูอาจค้างที่ "กำลังเชื่อมต่อ…" ถ้าห้องหลุดก่อนได้ state แรก (ยังไม่มี timeout)
-- รอยต่อหญ้ากับทรายยังเป็นขอบตรง
-- (เล็ก) ขั้นที่ 3: ของเต็ม 99 แล้วตียังทำให้ทรัพยากรหมด · ปุ่ม ✋ ค้างได้ถ้าพับจอกลางการกด · กระเป๋าทับโซน joystick · ทรัพยากรที่ตีไม่หมดไม่ฟื้น · ยังไม่จำกัดจำนวนข้อความต่อวินาที · ผู้เล่นที่ทับของแข็งเดินออกไม่ได้ (ไม่ควรเกิด แต่ยังไม่มีทางออก)
-- ยังไม่ได้วัด FPS บนมือถือจริง (มีรูปต้นไม้/หิน/พุ่ม ~700 ชิ้น)
-- (ขั้นที่ 4 เล็ก) หน้าคราฟต์ไม่ปิดตอนเน็ตสะดุด · กระเป๋า 8 ช่องล้ำเข้าโซน joystick · ยังไม่มีคูลดาวน์ craft/place/cook
-- (ขั้นที่ 4) เครื่องมือยังไม่มีความทนทาน · กองไฟทำลาย/ย้ายไม่ได้ · กองไฟในโลกยังไม่ได้เช็กด้วยตาในเบราว์เซอร์ (เช็กแค่ไอคอน + เทสต์เซิร์ฟเวอร์)
-- ตายแล้วของยังอยู่ในกระเป๋า (สเปกบอกให้ตกที่จุดตาย — ต้องมีระบบของวางบนพื้นก่อน, ขั้นที่ 5) · กระเป๋า/ค่าสถานะทุกคนในห้องมองเห็นได้ทาง state
-- (เล็ก) ทรายริมน้ำที่ติดน้ำ 2 ด้านยังไม่มีขอบแดง / หญ้าที่ติดน้ำไม่มีขอบ · ตัวละครเดินอยู่กับที่ระหว่าง "กำลังเชื่อมต่อใหม่" · อาจหันกลับนิดหนึ่งตอนระบบทำนายแก้ตำแหน่ง · ป้ายชื่อถูกต้นไม้บัง
-- (เล็ก) ตำแหน่งต้นไม้ผูกกับกติกาจุดเกิด — ก่อนขั้นที่ 3/5 ควรมีเทสต์ snapshot กันเปลี่ยนโดยไม่ตั้งใจ · tileset โหลด 2 รอบ (spritesheet + image)
-- (เล็ก) ชื่อที่มีอักขระล่องหน/อีโมจิครอบครัวตัดไม่สวย; กด Enter ในเมนูยังไม่ทำงาน
+- (เล็ก) joystick/ปุ่ม ✋ ค้างได้ถ้าพับจอกลางการกด · กระเป๋าล้ำเข้าโซน joystick · หน้าคราฟต์ไม่ปิดตอนเน็ตสะดุด · ป้ายชื่อถูกต้นไม้บัง · กด Enter ในเมนูยังไม่ทำงาน
+- (เล็ก) เครื่องมือยังไม่มีความทนทาน · ยังไม่ได้วัด FPS บนมือถือจริง
 - `/monitor` และ playground เปิดอยู่ตอน dev — ตอนขึ้นเซิร์ฟเวอร์จริงต้องตั้ง `NODE_ENV=production`
 
 ## ขั้นต่อไป
-**ขั้นที่ 5 — สร้างฐาน + บันทึกโลก:** พื้น/กำแพง/ประตู/กล่องเก็บของ/ที่นอน (ต่อยอด `structures`), SQLite `WorldStore`, token จำตัวผู้เล่น, ของตกที่จุดตาย
-ต้องเขียนแผน `docs/superpowers/plans/` ใหม่ก่อนลงมือ
+1. ขั้นที่ 5: review ทั้ง branch → merge เข้า main → push → CI เขียว
+2. **ขั้นที่ 6:** ไดโนเสาร์ 3–4 ชนิด (AI เดินเล่น/หนี/โจมตี, ล่าได้เนื้อ, เทมด้วยการให้อาหาร → ตามและช่วยสู้) + PWA + เตรียมขึ้นเซิร์ฟเวอร์ (client → GitHub Pages, server → Render/Oracle, `VITE_SERVER_URL`)
+3. **ขั้นที่ 7:** กล่องเสบียงจากโลกปัจจุบัน, กลางวัน/กลางคืน, กล่องเก็บของ, ขัดเกลา
 
 ## เอกสารอื่น
 - [INDEX](INDEX.md)
