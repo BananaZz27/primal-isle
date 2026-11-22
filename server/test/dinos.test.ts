@@ -65,6 +65,14 @@ describe("dinosaurs", () => {
     return { room, c, p, dinos, send, place };
   }
 
+  /** ป้อนตามคูลดาวน์ */
+  async function feed(send: (t: string, m: unknown) => Promise<void>, id: string, times: number) {
+    for (let i = 0; i < times; i++) {
+      await send("feed", { id });
+      await sleep(BALANCE.gatherCooldownMs + 20);
+    }
+  }
+
   /** ตีตามคูลดาวน์ */
   async function hit(send: (t: string, m: unknown) => Promise<void>, id: string, times: number) {
     for (let i = 0; i < times; i++) {
@@ -135,15 +143,14 @@ describe("dinosaurs", () => {
     const TOKEN = "tamerTOKENtamerTOKEN";
     const { room, c, p, send, place } = await setup({ berry: 5 }, TOKEN);
     const id = place("compy");
-    await send("feed", { id });
-    await send("feed", { id });
+    await feed(send, id, 2);
     expect(room.state.dinos.get(id)!.owner).toBe("");
-    await send("feed", { id });
+    await feed(send, id, 1);
     const d = room.state.dinos.get(id)!;
     expect(d.owner).toBe("hunter");
     expect(p.inventory.get("berry")).toBe(2);
 
-    await send("feed", { id }); // เทมแล้ว ไม่กินอีก
+    await feed(send, id, 1); // เทมแล้ว ไม่กินอีก
     expect(p.inventory.get("berry")).toBe(2);
     await room.waitForNextPatch();
     expect(JSON.stringify(c.state.toJSON())).not.toContain(TOKEN);
@@ -152,23 +159,23 @@ describe("dinosaurs", () => {
   it("only tameable kinds, only with the right food, only in reach", async () => {
     const { room, p, send, place } = await setup({ berry: 9 });
     const trike = place("trike", 30);
-    for (let i = 0; i < 3; i++) await send("feed", { id: trike });
+    await feed(send, trike, 3);
     expect(room.state.dinos.get(trike)!.owner).toBe("");
     expect(p.inventory.get("berry")).toBe(9);
 
     const raptor = place("raptor", 20);
-    await send("feed", { id: raptor }); // แร็พเตอร์กินเนื้อ ไม่กินผลไม้
+    await feed(send, raptor, 1); // แร็พเตอร์กินเนื้อ ไม่กินผลไม้
     expect(p.inventory.get("berry")).toBe(9);
 
     const far = place("compy", 80);
-    await send("feed", { id: far });
+    await feed(send, far, 1);
     expect(p.inventory.get("berry")).toBe(9);
   });
 
   it("at most 3 tamed dinos per player", async () => {
     const { room, send, place } = await setup({ berry: 99 });
     const ids = [place("compy"), place("compy"), place("compy"), place("compy")];
-    for (const id of ids) for (let i = 0; i < 3; i++) await send("feed", { id });
+    for (const id of ids) await feed(send, id, 3);
     expect(ids.map((id) => room.state.dinos.get(id)!.owner)).toEqual(["hunter", "hunter", "hunter", ""]);
   });
 
@@ -176,7 +183,7 @@ describe("dinosaurs", () => {
     const TOKEN = "ownerTOKENownerTOKEN";
     const { room, c, p, dinos, send, place } = await setup({ berry: 3 }, TOKEN);
     const id = place("compy");
-    for (let i = 0; i < 3; i++) await send("feed", { id });
+    await feed(send, id, 3);
     dinos.unfreeze(id);
     const d = room.state.dinos.get(id)!;
 
@@ -219,6 +226,73 @@ describe("dinosaurs", () => {
     );
     const room = await colyseus.createRoom<WorldRoom>("world", { code: "VERSNA" });
     expect(room.state.seed).toBe(SEED);
+  });
+
+  // review #1
+  it("taming a raptor that was biting you doesn't make your other raptor kill it", async () => {
+    const { room, p, dinos, send, place } = await setup({ meat: 8 });
+    const first = place("raptor", 20);
+    for (let i = 0; i < 4; i++) {
+      await send("feed", { id: first });
+      await sleep(BALANCE.gatherCooldownMs + 20);
+    }
+    const second = dinos.spawnAt("raptor", p.x - 20, p.y, room.clock.currentTime);
+    dinos.unfreeze(first);
+    await sleep(1200); // ตัวที่ 2 กัดเจ้าของ → เป็นศัตรูของเจ้าของ
+    for (let i = 0; i < 4; i++) {
+      await send("feed", { id: second });
+      await sleep(BALANCE.gatherCooldownMs + 20);
+    }
+    expect(room.state.dinos.get(second)?.owner).toBe("hunter");
+    const hp = () => [room.state.dinos.get(first)?.hp, room.state.dinos.get(second)?.hp];
+    const before = hp();
+    await sleep(2500);
+    expect(hp()).toEqual(before);
+  }, 20000);
+
+  // review #2
+  it("a door stops wild dinos", async () => {
+    const { room, p, dinos, send } = await setup({ door: 1 });
+    const at = openArea();
+    const tx = Math.floor(at.x / TILE_SIZE);
+    Object.assign(p, { x: at.x + 32, y: at.y });
+    await send("place", { item: "door", tx, ty: Math.floor(at.y / TILE_SIZE) });
+    expect(room.state.structures.size).toBe(1);
+    const raptor = dinos.spawnAt("raptor", at.x - 32, at.y, room.clock.currentTime);
+    const before = p.health;
+    await sleep(2000);
+    expect(room.state.dinos.get(raptor)!.x).toBeLessThan(tx * TILE_SIZE);
+    expect(p.health).toBeGreaterThanOrEqual(before);
+  });
+
+  // review #4: ผู้เล่นชั่วคราว (ไม่มี token) เทมไม่ได้ — ไม่งั้นไดโนกำพร้าค้างโลกตลอดไป
+  it("guests without a token can't tame", async () => {
+    const room = await colyseus.createRoom<WorldRoom>("world", { seed: SEED });
+    const c = await colyseus.connectTo(room, { name: "guest" });
+    const p = room.state.players.get(c.sessionId)!;
+    p.inventory.set("berry", 3);
+    const dinos = (room as any).dinos as DinoSystem;
+    const at = openArea();
+    Object.assign(p, at);
+    const id = dinos.spawnAt("compy", at.x + 20, at.y, room.clock.currentTime);
+    dinos.freeze(id);
+    for (let i = 0; i < 3; i++) {
+      c.send("feed", { id });
+      await room.waitForNextMessage();
+      await sleep(BALANCE.gatherCooldownMs + 20);
+    }
+    expect(room.state.dinos.get(id)!.owner).toBe("");
+    expect(p.inventory.get("berry")).toBe(3);
+  });
+
+  // review #7
+  it("feeding has the same cooldown as hitting (no instant tame by spamming)", async () => {
+    const { room, c, p, place } = await setup({ meat: 9 });
+    const id = place("raptor", 20);
+    for (let i = 0; i < 4; i++) c.send("feed", { id });
+    await sleep(150);
+    expect(room.state.dinos.get(id)!.owner).toBe("");
+    expect(p.inventory.get("meat")).toBe(8);
   });
 
   it("cooking prefers meat: meat → steak", async () => {

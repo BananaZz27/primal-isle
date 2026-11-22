@@ -77,8 +77,11 @@ export function stepMover(
   let dirY = clamp1(moveY);
 
   // ความยาวทิศเกิน 1 (เช่นทแยงเต็มแรง) → ย่อให้ไม่เร็วกว่าเดินตรง
-  const len = Math.hypot(dirX, dirY);
-  if (len > 1) {
+  // ใช้ sqrt (ทุกเบราว์เซอร์ให้ผลตรงกันทุกบิต) ไม่ใช้ hypot และเผื่อค่าปัดเศษ:
+  // ทแยงของผู้เล่น (1/√2, 1/√2) ต้องไม่ถูกย่อซ้ำ ไม่งั้น client กับ server อาจคำนวณต่างกัน
+  const len2 = dirX * dirX + dirY * dirY;
+  if (len2 > 1 + 1e-9) {
+    const len = Math.sqrt(len2);
     dirX /= len;
     dirY /= len;
   }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { hurt, newBrain, think, type DinoKind, type DinoView } from "../src/index";
+import { hurt, newBrain, PLAYER_SPEED, think, type DinoKind, type DinoView } from "../src/index";
 
 const rand = () => 0.5;
 const view = (over: Partial<DinoView> = {}): DinoView => ({ players: [], dinos: [], owner: null, ownerFoe: null, ...over });
@@ -74,8 +74,26 @@ describe("dino brain", () => {
       const b = brain("raptor");
       b.tamed = true;
       const foe = { type: "dino" as const, id: "d9" };
-      const out = think(b, view({ owner: { x: 500, y: 500 }, ownerFoe: foe, dinos: [{ id: "d9", x: 515, y: 500, half: 6 }] }), 0, rand);
+      const out = think(b, view({ owner: { x: 500, y: 500 }, ownerFoe: foe, dinos: [{ id: "d9", x: 515, y: 500, half: 6, tamed: false }] }), 0, rand);
       expect(out.bite).toEqual(foe);
+    });
+
+    // review #1: ไดโนที่เทมแล้วห้ามสู้กันเอง (เช่น เพิ่งเทมแร็พเตอร์ตัวที่ 2 ที่เคยกัดเจ้าของ)
+    it("never targets another tamed dino, even as the owner's foe", () => {
+      const b = brain("raptor");
+      b.tamed = true;
+      const foe = { type: "dino" as const, id: "pal" };
+      b.target = foe;
+      const out = think(b, view({ owner: { x: 500, y: 500 }, ownerFoe: foe, dinos: [{ id: "pal", x: 512, y: 500, half: 9, tamed: true }] }), 0, rand);
+      expect(out.bite).toBeNull();
+    });
+
+    it("tamed dinos follow faster than a player walks; a fleeing compy is slower than a player", () => {
+      const b = brain("compy");
+      b.tamed = true;
+      expect(think(b, view({ owner: { x: 700, y: 500 } }), 0, rand).speed).toBeGreaterThan(PLAYER_SPEED);
+      const wild = think(brain("compy"), view({ players: [{ id: "p", x: 480, y: 500 }] }), 0, rand);
+      expect(wild.speed).toBeLessThan(PLAYER_SPEED);
     });
 
     it("waits where it is while the owner is offline", () => {

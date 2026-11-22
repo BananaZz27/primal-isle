@@ -108,7 +108,7 @@
       "half": 6,
       "hp": 20,
       "speed": 40,
-      "runSpeed": 90,
+      "runSpeed": 70,
       "meat": 1,
       "cap": 12,
       "temper": "skittish",
@@ -156,5 +156,6 @@
       "bite": 15,
       "biteCooldownMs": 1500
     }
-  }
+  },
+  "tamedFollowSpeed": 95
 }

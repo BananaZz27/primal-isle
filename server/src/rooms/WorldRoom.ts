@@ -96,7 +96,8 @@ export class WorldRoom extends Room<{ state: WorldState; input: MoveInput }> {
     cook: (client: Client) => this.withPlayer(client, (p) => this.crafting.cook(p)),
     attack: (client: Client, msg: unknown) =>
       this.withPlayer(client, (p) => this.dinos.attack(client.sessionId, p, msg, this.clock.currentTime)),
-    feed: (client: Client, msg: unknown) => this.withPlayer(client, (p) => this.dinos.feed(p, msg, this.clock.currentTime)),
+    feed: (client: Client, msg: unknown) =>
+      this.withPlayer(client, (p) => this.dinos.feed(client.sessionId, p, msg, this.clock.currentTime)),
   };
 
   async onCreate(options: WorldCreateOptions = {}) {
@@ -135,6 +136,7 @@ export class WorldRoom extends Room<{ state: WorldState; input: MoveInput }> {
       this.state,
       this.map,
       this.solid,
+      (tx, ty) => this.solid(tx, ty) || this.building.door(tx, ty),
       Array.from({ length: MAX_PLAYERS }, (_, i) => findSpawn(this.map, i)),
       {
         tokenOf: (p) => this.owners.get(p) ?? "",

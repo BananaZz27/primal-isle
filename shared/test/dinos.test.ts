@@ -72,6 +72,14 @@ describe("stepMover", () => {
     expect(big.y).toBeLessThan(4 * TILE_SIZE);
   });
 
+  // review #6: ทแยงด้วยคีย์บอร์ดต้องได้ผลเหมือนสูตรเดิมทุกบิต (Safari/Node อาจคำนวณ hypot ต่างกันเล็กน้อย)
+  it("a keyboard diagonal step is bit-identical to the old formula", () => {
+    const p = { x: 40, y: 40, vx: 0, vy: 0 };
+    stepPlayer(p, { moveX: 1, moveY: 1 }, 0.05, map);
+    expect(p.x).toBe(40 + Math.SQRT1_2 * 80 * 0.05);
+    expect(p.y).toBe(40 + Math.SQRT1_2 * 80 * 0.05);
+  });
+
   it("stepPlayer still moves at PLAYER_SPEED", () => {
     const p = { x: 40, y: 40, vx: 0, vy: 0 };
     stepPlayer(p, { moveX: 1, moveY: 0 }, 0.05, map);

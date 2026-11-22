@@ -74,6 +74,8 @@ export class DinoSystem {
     private state: WorldState,
     private map: WorldMap,
     private solid: SolidFn,
+    /** ช่องที่ไดโนป่าเดินผ่านไม่ได้ (เพิ่มจาก solid: ประตู — ฐานกันแร็พเตอร์ได้) */
+    private wildSolid: SolidFn,
     private spawns: { x: number; y: number }[],
     private hooks: DinoHooks,
     private rand: () => number = Math.random,
@@ -118,7 +120,7 @@ export class DinoSystem {
   }
 
   /** ผู้เล่นป้อนอาหาร (ข้อความ feed {id}) — ครบจำนวน = เทม */
-  feed(player: Player, msg: unknown, now: number): void {
+  feed(sessionId: string, player: Player, msg: unknown, now: number): void {
     const key = (msg as { id?: unknown } | null)?.id;
     if (typeof key !== "string") return;
     const dino = this.state.dinos.get(key);
@@ -127,7 +129,12 @@ export class DinoSystem {
     if (!tame || (player.inventory.get(tame.food) ?? 0) <= 0) return;
     if (!dinoInReach(player.x, player.y, dino.x, dino.y, dinoDef(dino.kind).half)) return;
     const token = this.hooks.tokenOf(player);
+    // ผู้เล่นชั่วคราวไม่มี token ถาวร: ถ้าเทมได้ ไดโนจะกำพร้าค้างโลกตลอดไป
+    if (token === "" || token.startsWith("guest-")) return;
     if (this.tamedBy(token) >= BALANCE.maxTamed) return;
+    // ป้อนใช้คูลดาวน์เดียวกับการตี (กดรัวๆ ไม่ได้เทมทันที — ต้องทนแร็พเตอร์กัดเอา)
+    if (!this.hooks.ready(sessionId, now)) return;
+    this.hooks.acted(sessionId, now);
 
     setCount(player, tame.food, (player.inventory.get(tame.food) ?? 0) - 1);
     const prev = this.feeding.get(key);
@@ -153,7 +160,7 @@ export class DinoSystem {
     const players = [...this.state.players.entries()].map(([id, p]) => ({ id, x: p.x, y: p.y }));
     const dinos = [...this.state.dinos.entries()]
       .filter(([, d]) => isDinoKind(d.kind))
-      .map(([id, d]) => ({ id, x: d.x, y: d.y, half: dinoDef(d.kind as DinoKind).half }));
+      .map(([id, d]) => ({ id, x: d.x, y: d.y, half: dinoDef(d.kind as DinoKind).half, tamed: this.owners.has(id) }));
 
     for (const [key, dino] of [...this.state.dinos.entries()]) {
       const brain = this.brains.get(key);
@@ -172,7 +179,8 @@ export class DinoSystem {
       const intent = think(brain, view, now, this.rand);
       if (intent.speed > 0) {
         const body = { x: dino.x, y: dino.y, vx: 0, vy: 0 };
-        stepMover(body, intent.moveX, intent.moveY, intent.speed, dinoDef(brain.kind).half, dt, this.map, this.solid);
+        const solid = brain.tamed ? this.solid : this.wildSolid;
+        stepMover(body, intent.moveX, intent.moveY, intent.speed, dinoDef(brain.kind).half, dt, this.map, solid);
         dino.x = body.x;
         dino.y = body.y;
         if (Math.abs(intent.moveX) > 0.1) dino.facing = intent.moveX < 0 ? -1 : 1;
@@ -217,6 +225,9 @@ export class DinoSystem {
     const dino = this.state.dinos.get(key)!;
     const brain = this.brains.get(key)!;
     this.owners.set(key, token);
+    // ใครเคยถือว่าตัวนี้เป็นศัตรู ให้ลืม (กันไดโนที่เทมแล้วสู้กันเอง)
+    for (const [t, foe] of this.foes) if (foe.ref.type === "dino" && foe.ref.id === key) this.foes.delete(t);
+    for (const other of this.brains.values()) if (other.target?.type === "dino" && other.target.id === key) other.target = null;
     brain.tamed = true;
     brain.target = null;
     brain.mode = "idle";
@@ -266,6 +277,7 @@ export class DinoSystem {
       this.foes.set(this.hooks.tokenOf(p), { ref: me, until: now + FOE_MS });
       return;
     }
+    if (brain.tamed && this.owners.has(target.id)) return; // ไดโนที่เทมแล้วไม่สู้กันเอง
     const ownerToken = this.owners.get(key);
     const owner = ownerToken ? this.hooks.playerByToken(ownerToken) : null;
     this.damage(target.id, dmg, me, owner, now);

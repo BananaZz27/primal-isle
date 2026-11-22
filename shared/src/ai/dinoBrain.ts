@@ -32,7 +32,8 @@ export interface DinoBrain {
 /** สิ่งที่ไดโนมองเห็นตอนคิด (ห้องเตรียมให้ทุก tick) */
 export interface DinoView {
   players: { id: string; x: number; y: number }[];
-  dinos: { id: string; x: number; y: number; half: number }[];
+  /** tamed = มีเจ้าของแล้ว (ไดโนที่เทมแล้วไม่สู้กันเอง) */
+  dinos: { id: string; x: number; y: number; half: number; tamed: boolean }[];
   /** ตำแหน่งเจ้าของ (ตัวที่เทมแล้ว, เจ้าของออนไลน์) */
   owner: { x: number; y: number } | null;
   /** ศัตรูของเจ้าของ (เพิ่งตีเจ้าของ หรือเจ้าของเพิ่งตี) */
@@ -96,12 +97,18 @@ export function think(b: DinoBrain, view: DinoView, now: number, rand: () => num
 
 function thinkTamed(b: DinoBrain, view: DinoView, now: number): DinoIntent {
   const def = dinoDef(b.kind);
-  // ศัตรูของเจ้าของ (หรือตัวที่ตีเรา) ที่ยังมีอยู่ → ไล่กัด (ไม่กัดผู้เล่นเด็ดขาด)
-  const foeRef = view.ownerFoe?.type === "dino" ? view.ownerFoe : b.target?.type === "dino" ? b.target : null;
-  const foe = foeRef && view.dinos.find((d) => d.id === foeRef.id);
-  if (foeRef && foe && view.owner && dist(foe, view.owner) <= BALANCE.dinoLeashPx) return attack(b, foeRef, foe, foe.half, now);
+  // ศัตรูของเจ้าของ (หรือตัวที่ตีเรา) ที่ยังมีอยู่ → ไล่กัด
+  // ไม่กัดผู้เล่น และไม่สู้กับไดโนที่เทมแล้ว (ของเราหรือของคนอื่น) เด็ดขาด
+  const wildFoe = (ref: Ref | null) => {
+    if (ref?.type !== "dino") return null;
+    const d = view.dinos.find((x) => x.id === ref.id);
+    return d && !d.tamed ? { ref, d } : null;
+  };
+  const foe = wildFoe(view.ownerFoe) ?? wildFoe(b.target);
+  if (foe && view.owner && dist(foe.d, view.owner) <= BALANCE.dinoLeashPx) return attack(b, foe.ref, foe.d, foe.d.half, now);
   b.target = null;
-  if (view.owner && dist(b, view.owner) > BALANCE.tamedFollowPx) return toward(b, view.owner, def.runSpeed);
+  b.mode = "idle";
+  if (view.owner && dist(b, view.owner) > BALANCE.tamedFollowPx) return toward(b, view.owner, BALANCE.tamedFollowSpeed);
   return STILL;
 }
 
