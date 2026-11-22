@@ -47,6 +47,13 @@ describe("placeCheck", () => {
 
   it("ok next to the player", () => expect(placeCheck(world(), me, "wall", 3, 3)).toBe(true));
   it("not out of reach", () => expect(placeCheck(world(), me, "wall", 5, 3)).toBe(false));
+  it("reach for placing is 32px (longer than the 24px gather reach)", () => {
+    expect(BALANCE.placeReach).toBe(32);
+    // ห่างจากกลางช่อง (3,3) = 29px: เกินระยะเก็บของ แต่ยังวางได้
+    expect(placeCheck(world(), { x: me.x - 13, y: me.y }, "wall", 3, 3)).toBe(true);
+    // ห่าง 33px: ไกลเกิน
+    expect(placeCheck(world(), { x: me.x - 17, y: me.y }, "wall", 3, 3)).toBe(false);
+  });
   it("not on water", () => expect(placeCheck(world(), at(1, 1), "wall", 0, 1)).toBe(false));
   it("not on decor", () => expect(placeCheck(world({ occupied: (x, y) => x === 3 && y === 3 }), me, "wall", 3, 3)).toBe(false));
   it("not on another structure", () =>

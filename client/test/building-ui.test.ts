@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { isToken, TILE_SIZE } from "@primal/shared";
+import { hitboxTouches, isToken, placeCheck, Tile, TILE_SIZE, type PlaceWorld } from "@primal/shared";
+import type { Facing } from "../src/render/facing";
 import { frontTile, nearestInReach } from "../src/input/building";
 import { newToken } from "../src/net/token";
 import { describeJoinError } from "../src/net/errors";
@@ -14,6 +15,21 @@ describe("frontTile", () => {
     expect(frontTile(p.x, p.y, "up")).toEqual({ tx: 5, ty: 4 });
     expect(frontTile(p.x, p.y, "left")).toEqual({ tx: 4, ty: 5 });
     expect(frontTile(p.x, p.y, "down")).toEqual({ tx: 5, ty: 6 });
+  });
+
+  // บั๊กจากเทสต์เบราว์เซอร์: เดินนิดเดียวแล้วกล่องชนล้ำเข้าช่องหน้า → เซิร์ฟเวอร์ไม่ยอมให้วาง
+  it("never overlaps the player's own hitbox, and the server accepts it, at any spot in a tile", () => {
+    const facings: Facing[] = ["left", "right", "up", "down"];
+    const open: Omit<PlaceWorld, "players"> = { map: { seed: 0, size: 20, tiles: new Uint8Array(400).fill(Tile.Grass) }, occupied: () => false, structures: [] };
+    for (let ox = 0; ox < TILE_SIZE; ox++)
+      for (let oy = 0; oy < TILE_SIZE; oy++)
+        for (const f of facings) {
+          const x = 8 * TILE_SIZE + ox;
+          const y = 8 * TILE_SIZE + oy;
+          const t = frontTile(x, y, f);
+          expect(hitboxTouches(x, y, t.tx, t.ty), `${f} @${ox},${oy}`).toBe(false);
+          expect(placeCheck({ ...open, players: [{ x, y }] }, { x, y }, "wall", t.tx, t.ty), `${f} @${ox},${oy}`).toBe(true);
+        }
   });
 });
 

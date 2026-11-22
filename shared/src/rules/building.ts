@@ -1,6 +1,6 @@
 import { PLAYER_HALF, TILE_SIZE } from "../constants";
 import { isWalkable, tileAt, type WorldMap } from "../world/tiles";
-import { BALANCE, inReach } from "./resources";
+import { BALANCE } from "./resources";
 
 /** สิ่งที่วางบนพื้นได้ */
 export type StructureKind = keyof typeof BALANCE.structures;
@@ -34,7 +34,7 @@ export function placeCheck(
   if (!isStructureKind(kind) || !Number.isInteger(tx) || !Number.isInteger(ty)) return false;
   const x = tx as number;
   const y = ty as number;
-  if (!inReach(by.x, by.y, x, y)) return false;
+  if (!inPlaceReach(by.x, by.y, x, y)) return false;
   if (!isWalkable(tileAt(w.map, x, y)) || w.occupied(x, y)) return false;
   if (w.structures.length >= BALANCE.maxStructures) return false;
   if (kind === "campfire" && w.structures.filter((s) => s.kind === "campfire").length >= BALANCE.maxCampfires) return false;
@@ -46,6 +46,16 @@ export function placeCheck(
   }
   for (const p of w.players) if (hitboxTouches(p.x, p.y, x, y)) return false;
   return true;
+}
+
+/**
+ * ระยะวางของ (32px) ยาวกว่าระยะเก็บของ (24px) เพราะช่องหน้าตัวนับจากขอบกล่องชน
+ * ไกลสุดคือ hypot(1.5 ช่อง + PLAYER_HALF, ครึ่งช่อง) ≈ 30px
+ */
+export function inPlaceReach(px: number, py: number, tx: number, ty: number): boolean {
+  const cx = tx * TILE_SIZE + TILE_SIZE / 2;
+  const cy = ty * TILE_SIZE + TILE_SIZE / 2;
+  return Math.hypot(px - cx, py - cy) <= BALANCE.placeReach;
 }
 
 /** กล่องชนของผู้เล่นที่ (px, py) ทับช่อง (tx, ty) ไหม — คณิตเดียวกับ stepPlayer */

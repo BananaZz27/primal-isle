@@ -1,12 +1,24 @@
-import { inReach, TILE_SIZE } from "@primal/shared";
+import { inReach, PLAYER_HALF, TILE_SIZE } from "@primal/shared";
 import type { Facing } from "../render/facing";
 
-const STEP: Record<Facing, [number, number]> = { right: [1, 0], left: [-1, 0], up: [0, -1], down: [0, 1] };
+const tileOf = (v: number) => Math.floor(v / TILE_SIZE);
 
-/** ช่องหน้าตัวละคร (ตามทิศที่หัน) — ใช้เป็นช่องที่จะวางสิ่งก่อสร้าง */
+/**
+ * ช่องหน้าตัวละคร (ตามทิศที่หัน) — ใช้เป็นช่องที่จะวางสิ่งก่อสร้าง
+ * นับจาก "ขอบกล่องชน" ไม่ใช่จุดกลางตัว: ถ้ายืนชิดขอบช่อง กล่องชนจะล้ำเข้าช่องข้าง ๆ
+ * แล้วเซิร์ฟเวอร์จะไม่ยอมให้วางทับตัวเอง จึงเลือกช่องถัดจากขอบกล่องชนออกไปเสมอ
+ */
 export function frontTile(px: number, py: number, facing: Facing): { tx: number; ty: number } {
-  const [dx, dy] = STEP[facing];
-  return { tx: Math.floor(px / TILE_SIZE) + dx, ty: Math.floor(py / TILE_SIZE) + dy };
+  switch (facing) {
+    case "left":
+      return { tx: tileOf(px - PLAYER_HALF) - 1, ty: tileOf(py) };
+    case "right":
+      return { tx: tileOf(px + PLAYER_HALF) + 1, ty: tileOf(py) };
+    case "up":
+      return { tx: tileOf(px), ty: tileOf(py - PLAYER_HALF) - 1 };
+    case "down":
+      return { tx: tileOf(px), ty: tileOf(py + PLAYER_HALF) + 1 };
+  }
 }
 
 /** ของที่ใกล้ที่สุดในระยะเอื้อม (สิ่งก่อสร้างที่จะรื้อ / ถุงที่จะเก็บ) */

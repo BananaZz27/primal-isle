@@ -8,6 +8,7 @@
   "berryFood": 20,
   "drinkAmount": 25,
   "gatherReach": 24,
+  "placeReach": 32,
   "gatherCooldownMs": 350,
   "stackMax": 99,
   "nodes": {
