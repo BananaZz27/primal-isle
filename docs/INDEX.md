@@ -10,3 +10,4 @@
 - [ออกแบบขั้นที่ 6ก ไดโนเสาร์](superpowers/specs/2026-11-22-m6-dinos-design.md) · [แผน](superpowers/plans/2026-11-22-m6-dinos.md)
 - [ออกแบบขั้นที่ 6ข ขึ้นออนไลน์](superpowers/specs/2026-11-22-m6b-online-design.md) · [แผน](superpowers/plans/2026-11-22-m6b-online.md)
 - [คู่มือขึ้นออนไลน์ (DEPLOY)](DEPLOY.md) — Render / Oracle / GitHub Pages ทีละขั้น
+- [ออกแบบขั้นที่ 7 โลกมีชีวิต](superpowers/specs/2026-11-22-m7-living-design.md) · [แผน](superpowers/plans/2026-11-22-m7-living.md)
