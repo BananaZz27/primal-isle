@@ -38,7 +38,7 @@
   },
   "roastFood": 35,
   "toolYield": 2,
-  "maxStructures": 30,
+  "maxStructures": 400,
   "recipes": {
     "axe": {
       "wood": 3,
@@ -53,6 +53,33 @@
     "campfire": {
       "wood": 5,
       "stone": 3
+    },
+    "wall": {
+      "wood": 2
+    },
+    "door": {
+      "wood": 3,
+      "fiber": 1
+    },
+    "bed": {
+      "wood": 3,
+      "fiber": 4
+    }
+  },
+  "maxCampfires": 30,
+  "dropDespawnSec": 900,
+  "structures": {
+    "campfire": {
+      "solid": false
+    },
+    "wall": {
+      "solid": true
+    },
+    "door": {
+      "solid": false
+    },
+    "bed": {
+      "solid": false
     }
   }
 }

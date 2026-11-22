@@ -126,7 +126,7 @@ describe("crafting", () => {
     expect(room.state.structures.size).toBe(1);
   });
 
-  it(`stops at ${BALANCE.maxStructures} campfires per world`, async () => {
+  it(`stops at ${BALANCE.maxCampfires} campfires per world`, async () => {
     const { room, p, send } = await setup({ campfire: 99 });
     // ลองวางมากกว่าขีดจำกัดเยอะๆ (บางช่องอาจติดกันจนถูกปฏิเสธ — ไม่เป็นไร)
     const total = countFree();
@@ -136,8 +136,8 @@ describe("crafting", () => {
       Object.assign(p, centre(t.tx, t.ty));
       await send("place", { item: "campfire" });
     }
-    expect(room.state.structures.size).toBe(BALANCE.maxStructures);
-    expect(p.inventory.get("campfire")).toBe(99 - BALANCE.maxStructures);
+    expect(room.state.structures.size).toBe(BALANCE.maxCampfires);
+    expect(p.inventory.get("campfire")).toBe(99 - BALANCE.maxCampfires);
   }, 20000); // ส่งข้อความ ~60 รอบ — เครื่อง CI ช้ากว่า จึงให้เวลามากกว่าค่าเริ่มต้น 5 วิ
 
   it("cooking next to a campfire turns a berry into roast; far away or no berry → nothing", async () => {
