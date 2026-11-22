@@ -1,0 +1,22 @@
+# Render Blueprint — กด "New → Blueprint" แล้วเลือก repo นี้ Render จะสร้างเซิร์ฟเวอร์ตามไฟล์นี้ (ดู docs/DEPLOY.md)
+services:
+  - type: web
+    name: primal-isle
+    runtime: docker
+    plan: free
+    # ใกล้ไทยที่สุด (ค่าเริ่มต้นคือสหรัฐฯ ช้ากว่า ~200ms)
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    # อัปเดตเมื่อ push เข้า main — เฉพาะเมื่อโค้ดเซิร์ฟเวอร์เปลี่ยน
+    # (Render ฟรีลบเซฟทุกครั้งที่รีสตาร์ท: แก้แค่เอกสาร/หน้าเว็บต้องไม่ทำให้โลกที่เล่นอยู่หาย)
+    autoDeployTrigger: commit
+    buildFilter:
+      paths:
+        - server/**
+        - shared/**
+        - Dockerfile
+        - package-lock.json
+    envVars:
+      - key: NODE_ENV
+        value: production

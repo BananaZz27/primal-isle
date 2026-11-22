@@ -1,0 +1,57 @@
+# ขึ้นหน้าเว็บเกม (client) ไป GitHub Pages — https://<ชื่อผู้ใช้>.github.io/primal-isle/
+# ทำงานเมื่อ: กด "Run workflow" เอง หรือ push เข้า main หลังตั้งตัวแปร SERVER_URL แล้ว (ดู docs/DEPLOY.md)
+# ยังไม่ตั้งค่า = งานนี้ถูกข้าม (ไม่ขึ้นกากบาทแดง)
+name: Deploy client (GitHub Pages)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  # ห้ามยกเลิกกลางการ deploy (หน้าเว็บอาจค้างครึ่งๆ) — รอบใหม่รอคิวแทน
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.event_name == 'workflow_dispatch' || vars.SERVER_URL != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: ตรวจตัวแปร SERVER_URL
+        env:
+          SERVER_URL: ${{ vars.SERVER_URL }}
+        run: |
+          case "$SERVER_URL" in
+            wss://*) echo "เซิร์ฟเวอร์เกม: $SERVER_URL" ;;
+            "") echo "::error::ยังไม่ได้ตั้งตัวแปร SERVER_URL (Settings → Secrets and variables → Actions → Variables) ดู docs/DEPLOY.md"; exit 1 ;;
+            *) echo "::error::SERVER_URL ต้องขึ้นต้นด้วย wss:// (หน้าเว็บเป็น https จึงต่อ ws:// ไม่ได้) — ตอนนี้เป็น: $SERVER_URL"; exit 1 ;;
+          esac
+      - run: npm ci
+      - run: npm run build -w client
+        env:
+          VITE_SERVER_URL: ${{ vars.SERVER_URL }}
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: client/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
