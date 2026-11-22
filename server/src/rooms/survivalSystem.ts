@@ -34,6 +34,12 @@ export class SurvivalSystem {
     private state: WorldState,
     private map: WorldMap,
     private decor: Decor[],
+    private hooks: {
+      /** ก่อนฟื้น: เช่น ทำถุงของตกที่จุดตาย */
+      onDeath?: (player: Player) => void;
+      /** จุดฟื้น (เช่น ที่นอน) — null = จุดเกิดปกติ */
+      respawnPoint?: (player: Player) => { x: number; y: number } | null;
+    } = {},
   ) {
     this.solid = solidFromNodes(map, decor, (id) => this.isDepleted(id));
   }
@@ -92,7 +98,8 @@ export class SurvivalSystem {
   }
 
   private respawn(player: Player): void {
-    const spawn = findSpawn(this.map, player.colorIndex);
+    this.hooks.onDeath?.(player);
+    const spawn = this.hooks.respawnPoint?.(player) ?? findSpawn(this.map, player.colorIndex);
     Object.assign(player, spawn, { vx: 0, vy: 0 }, freshStats());
   }
 

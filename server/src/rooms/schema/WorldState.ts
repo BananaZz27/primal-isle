@@ -47,8 +47,20 @@ export const Structure = schema({
   kind: t.string(),
   tx: t.uint16(),
   ty: t.uint16(),
+  /** เจ้าของ (ใช้กับที่นอน: ฟื้นที่ที่นอนของตัวเอง) */
+  owner: t.string(),
 });
 export type Structure = SchemaType<typeof Structure>;
+
+/** ถุงของที่ตกตอนผู้เล่นสลบ — ใครก็เก็บได้ */
+export const Drop = schema({
+  tx: t.uint16(),
+  ty: t.uint16(),
+  /** เวลาของห้อง (ms) ที่ถุงจะหายไปเอง */
+  expiresAt: t.number(),
+  items: t.map("uint8"),
+});
+export type Drop = SchemaType<typeof Drop>;
 
 export const WorldState = schema({
   seed: t.uint32(),
@@ -57,5 +69,7 @@ export const WorldState = schema({
   nodes: t.map(NodeState),
   /** key = เลขลำดับที่วาง (ข้อความ) */
   structures: t.map(Structure),
+  /** key = เลขลำดับ (ข้อความ) */
+  drops: t.map(Drop),
 });
 export type WorldState = SchemaType<typeof WorldState>;

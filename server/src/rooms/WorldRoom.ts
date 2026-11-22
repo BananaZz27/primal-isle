@@ -14,6 +14,7 @@ import { MoveInput, Player, WorldState } from "./schema/WorldState.js";
 import { StepBudget } from "./stepBudget.js";
 import { SurvivalSystem } from "./survivalSystem.js";
 import { CraftingSystem } from "./craftingSystem.js";
+import { BuildingSystem } from "./buildingSystem.js";
 
 /** เวลาที่รอผู้เล่นที่เน็ตหลุดให้ต่อกลับมา (วินาที) */
 export const RECONNECT_SECONDS = 20;
@@ -44,6 +45,11 @@ export class WorldRoom extends Room<{ state: WorldState; input: MoveInput }> {
   private budget = new StepBudget();
   private survival!: SurvivalSystem;
   private crafting!: CraftingSystem;
+  private building!: BuildingSystem;
+  /** ผู้เล่น → id เจ้าของ (ตอนนี้ = sessionId) */
+  private owners = new Map<Player, string>();
+  /** ช่องที่ชน: ทรัพยากร + กำแพง */
+  private solid = (tx: number, ty: number) => this.survival.solid(tx, ty) || this.building.solid(tx, ty);
 
   /**
    * บัฟเฟอร์ input ต่อผู้เล่น — sanitize บังคับค่าทุกช่องให้อยู่ใน -1..1 ตอนถอดรหัส (ไม่เชื่อข้อมูลจากเน็ต)
@@ -62,7 +68,10 @@ export class WorldRoom extends Room<{ state: WorldState; input: MoveInput }> {
       this.withPlayer(client, (p) => this.survival.eat(p, msg?.item)),
     drink: (client: Client) => this.withPlayer(client, (p) => this.survival.drink(p)),
     craft: (client: Client, msg: unknown) => this.withPlayer(client, (p) => this.crafting.craft(p, msg)),
-    place: (client: Client, msg: unknown) => this.withPlayer(client, (p) => this.crafting.place(p, msg)),
+    place: (client: Client, msg: unknown) => this.withPlayer(client, (p) => this.building.place(p, msg)),
+    demolish: (client: Client, msg: unknown) => this.withPlayer(client, (p) => this.building.demolish(p, msg)),
+    pickup: (client: Client, msg: unknown) =>
+      this.withPlayer(client, (p) => this.building.pickup(p, msg, this.clock.currentTime)),
     cook: (client: Client) => this.withPlayer(client, (p) => this.crafting.cook(p)),
   };
 
@@ -74,8 +83,12 @@ export class WorldRoom extends Room<{ state: WorldState; input: MoveInput }> {
     this.state.seed = seed;
     this.map = generateWorld(seed);
     const decor = generateDecor(this.map);
-    this.survival = new SurvivalSystem(this.state, this.map, decor);
-    this.crafting = new CraftingSystem(this.state, this.map, decor);
+    this.building = new BuildingSystem(this.state, this.map, decor, (p) => this.owners.get(p) ?? "");
+    this.survival = new SurvivalSystem(this.state, this.map, decor, {
+      onDeath: (p) => this.building.dropBag(p, this.clock.currentTime),
+      respawnPoint: (p) => this.building.bedFor(p),
+    });
+    this.crafting = new CraftingSystem(this.state);
     this.setFixedTimestep((ctx) => this.step(ctx), TICK_RATE);
   }
 
@@ -92,6 +105,7 @@ export class WorldRoom extends Room<{ state: WorldState; input: MoveInput }> {
       colorIndex: index % MAX_PLAYERS,
       ...freshStats(),
     });
+    this.owners.set(player, client.sessionId);
     this.state.players.set(client.sessionId, player);
   }
 
@@ -104,6 +118,8 @@ export class WorldRoom extends Room<{ state: WorldState; input: MoveInput }> {
   }
 
   onLeave(client: Client, _code: CloseCode) {
+    const leaving = this.state.players.get(client.sessionId);
+    if (leaving) this.owners.delete(leaving);
     this.state.players.delete(client.sessionId);
     this.budget.forget(client.sessionId);
     this.survival.forget(client.sessionId);
@@ -118,10 +134,11 @@ export class WorldRoom extends Room<{ state: WorldState; input: MoveInput }> {
       const channel = this.inputs.get(sessionId);
       if (!channel) continue;
       const batch = channel.take(this.budget.allowance(sessionId));
-      for (const input of batch) stepPlayer(player, input, ctx.dt, this.map, this.survival.solid);
+      for (const input of batch) stepPlayer(player, input, ctx.dt, this.map, this.solid);
       this.budget.spend(sessionId, batch.length);
     }
     this.survival.tick(ctx.dt, this.clock.currentTime);
+    this.building.tick(this.clock.currentTime);
   }
 
   /** เรียกงานกับผู้เล่นของ client นี้ (ถ้ายังอยู่ในห้อง) */
