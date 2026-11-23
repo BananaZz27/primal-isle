@@ -401,3 +401,99 @@ canvas.icon {
     max-height: calc(100dvh - 90px);
   }
 }
+
+/* ---------- ขั้นที่ 7: ชิปเวลา, ลูกศรกล่องเสบียง, หน้าต่างกล่องเก็บของ ---------- */
+.daychip {
+  font-size: 12px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  align-self: flex-start;
+  background: #f0c04044;
+}
+.daychip.dusk {
+  background: #f0803055;
+}
+.daychip.night {
+  background: #5060c066;
+}
+
+/* ลูกศรขอบจอ: แตะทะลุได้ (ไม่บังปุ่ม/joystick) */
+.crate-arrow {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  pointer-events: none;
+  text-shadow: 0 0 3px #000, 0 0 2px #000;
+}
+.crate-arrow[hidden] {
+  display: none;
+}
+.crate-arrow .pointer {
+  font-size: 26px;
+  color: #ffd24a;
+  line-height: 1;
+}
+.crate-arrow .dist {
+  font-size: 12px;
+  padding: 1px 5px;
+  border-radius: 6px;
+  background: #00000088;
+  white-space: nowrap;
+}
+
+/* หน้าต่างกล่องเก็บของ: ที่เดียวกับหน้าคราฟต์ (เปิดทีละอัน) */
+.chest {
+  position: absolute;
+  bottom: 76px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(520px, 96vw);
+  max-height: calc(100dvh - 110px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #102a44f2;
+  box-shadow: 0 8px 30px #0008;
+}
+.chest[hidden] {
+  display: none;
+}
+.chest-sides {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.chest-side {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 10px;
+  background: #ffffff12;
+  min-width: 0;
+}
+.chest-side small {
+  opacity: 0.8;
+}
+.chest-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 48px;
+}
+.chest-grid .empty-note {
+  align-self: center;
+  opacity: 0.6;
+}
+@media (max-width: 720px) {
+  .chest {
+    bottom: 60px;
+    max-height: calc(100dvh - 90px);
+  }
+}

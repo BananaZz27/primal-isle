@@ -1,5 +1,6 @@
 import Phaser from "phaser";
-import { generateDecor, generateWorld, inPlaceReach, solidFromNodes, TILE_SIZE } from "@primal/shared";
+import { generateDecor, generateWorld, solidFromNodes, TILE_SIZE } from "@primal/shared";
+import type { Player } from "@primal/server/schema";
 import { CAMERA_ZOOM } from "../config";
 import { combineInputs } from "../input/combine";
 import { InteractControls, pickTarget } from "../input/interact";
@@ -12,14 +13,19 @@ import { DinoView } from "../render/dinos";
 import { feedTarget } from "../input/feed";
 import { ResourceView } from "../render/resourceNodes";
 import { StructureView } from "../render/structures";
+import { CrateView } from "../render/crates";
+import { NightView } from "../render/night";
+import { ChestPanel, chestStillOpen } from "../ui/chestPanel";
+import { CrateArrow, nearestCrate } from "../ui/crateArrow";
+import { lootGained, lootText } from "../ui/loot";
 import { CraftPanel } from "../ui/craftPanel";
 import { el, uiRoot } from "../ui/dom";
-import { frontTile, nearestInReach } from "../input/building";
+import { demolishTarget, frontTile } from "../input/building";
 import { buildTilemap } from "../render/tilemap";
 import { showConnectionLost, showReconnecting } from "../ui/hud";
 import { InventoryHud } from "../ui/inventory";
 import { showInvitePanel } from "../ui/invitePanel";
-import { StatsHud } from "../ui/stats";
+import { StatsHud, toast } from "../ui/stats";
 
 export interface WorldSceneData {
   room: WorldRoom;
@@ -41,6 +47,13 @@ export class WorldScene extends Phaser.Scene {
   private statsHud!: StatsHud;
   private inventoryHud!: InventoryHud;
   private craftPanel!: CraftPanel;
+  private structures!: StructureView;
+  private crates!: CrateView;
+  private night!: NightView;
+  private crateArrow!: CrateArrow;
+  private chestPanel!: ChestPanel;
+  /** กล่องเสบียงที่เพิ่งกดเปิด + ของในกระเป๋าก่อนเปิด (ไว้บอกว่าได้อะไร) */
+  private pendingLoot: { key: string; before: Record<string, number>; at: number } | null = null;
   private hudTimer = 0;
   private connected = true;
 
@@ -62,6 +75,11 @@ export class WorldScene extends Phaser.Scene {
     // ต้นไม้/หินที่ยังไม่ถูกเก็บหมดเป็นของแข็ง — ใช้สถานะจากเซิร์ฟเวอร์ (ตัวเดียวกับที่เซิร์ฟเวอร์ใช้ชน)
     const resourceSolid = solidFromNodes(map, decor, (id) => this.room.state.nodes.get(String(id))?.hp === 0);
     const structures = new StructureView(this, this.room);
+    this.structures = structures;
+    this.crates = new CrateView(this, this.room, () => toast("📦 กล่องเสบียงตกลงมาแล้ว! ตามลูกศรไปเปิด"));
+    this.night = new NightView(this, () => structures.campfires());
+    this.crateArrow = new CrateArrow();
+    this.chestPanel = new ChestPanel((key, item, n, dir) => this.room.send("chest", { key, item, n, dir }));
     // ชน = ต้นไม้/หินที่ยังอยู่ + กำแพง (ตัวเดียวกับที่เซิร์ฟเวอร์ใช้)
     const solid = (tx: number, ty: number) => resourceSolid(tx, ty) || structures.solid(tx, ty);
 
@@ -90,8 +108,25 @@ export class WorldScene extends Phaser.Scene {
       if (!me || !this.connected) return;
       const { x, y } = this.prediction.pos(me);
       const canCook = (me.inventory.get("berry") ?? 0) > 0 || (me.inventory.get("meat") ?? 0) > 0;
-      const target = pickTarget(x, y, decor, map, isDepleted, structures.campfires(), canCook, structures.bagList(), this.dinoView.list());
+      const target = pickTarget(x, y, {
+        decor,
+        map,
+        isDepleted,
+        campfires: structures.campfires(),
+        canCook,
+        drops: structures.bagList(),
+        crates: this.crates.list(),
+        dinos: this.dinoView.list(),
+        chests: structures.chests(),
+      });
       if (target?.kind === "drop") this.room.send("pickup", { key: target.key });
+      else if (target?.kind === "crate") {
+        this.pendingLoot = { key: target.key, before: Object.fromEntries(me.inventory.entries()), at: performance.now() };
+        this.room.send("open", { key: target.key });
+      } else if (target?.kind === "chest") {
+        this.craftPanel.close(); // ใช้ที่เดียวกันบนจอ
+        this.chestPanel.open(target.key);
+      }
       else if (target?.kind === "dino") this.room.send("attack", { id: target.key });
       else if (target?.kind === "node") this.room.send("gather", { node: target.id });
       else if (target?.kind === "campfire") this.room.send("cook", {});
@@ -106,14 +141,21 @@ export class WorldScene extends Phaser.Scene {
       const { tx, ty } = frontTile(pos.x, pos.y, this.players.facingOf(this.room.sessionId));
       this.room.send("place", { item, tx, ty });
     });
-    this.craftPanel = new CraftPanel(this.inventoryHud.element, (recipe) => this.room.send("craft", { recipe }));
+    this.craftPanel = new CraftPanel(
+      this.inventoryHud.element,
+      (recipe) => this.room.send("craft", { recipe }),
+      () => this.chestPanel.close(), // หน้าคราฟต์กับหน้าต่างกล่องใช้ที่เดียวกันบนจอ — เปิดทีละอัน
+    );
     // ปุ่มรื้อ: รื้อสิ่งก่อสร้างที่ใกล้ที่สุดในระยะ (ได้ของคืน)
     const demolish = el("button", { className: "craft-toggle", text: "🪓" });
     demolish.title = "รื้อสิ่งก่อสร้างที่ใกล้ที่สุด";
     demolish.addEventListener("click", () => {
       const pos = myPos();
-      const target = pos && nearestInReach(pos.x, pos.y, structures.all(), inPlaceReach);
-      if (target) this.room.send("demolish", { key: target.key });
+      if (!pos) return;
+      const kinds = (key: string) => this.room.state.chests.get(key)?.items.size ?? 0;
+      const target = demolishTarget(pos.x, pos.y, structures.all(), kinds);
+      if (target && "key" in target) this.room.send("demolish", { key: target.key });
+      else if (target) toast("เอาของออกจากกล่องก่อน จึงจะรื้อได้");
     });
     this.inventoryHud.element.append(demolish);
     // ปุ่มป้อนอาหาร 🍖 (และปุ่ม F บนคอม): ขึ้นเฉพาะตอนมีไดโนที่เทมได้อยู่ใกล้ และเรามีอาหารที่มันชอบ
@@ -133,8 +175,13 @@ export class WorldScene extends Phaser.Scene {
     });
     uiRoot().append(this.feedButton);
     this.input.keyboard?.addKey("F").on("down", feed);
+    this.input.keyboard?.addKey("ESC").on("down", () => this.chestPanel.close());
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       structures.destroy();
+      this.crates.destroy();
+      this.night.destroy();
+      this.crateArrow.destroy();
+      this.chestPanel.destroy();
       this.dinoView.destroy();
       this.feedButton.remove();
       this.craftPanel.destroy();
@@ -168,6 +215,7 @@ export class WorldScene extends Phaser.Scene {
 
     const onDrop = () => {
       this.connected = false;
+      this.chestPanel.close(); // ข้อความที่กดตอนเน็ตหลุดจะถูกส่งซ้ำทีหลังด้วยจำนวนเก่า — ปิดไว้ก่อน
       setNotice(() => showReconnecting(toMenu));
     };
     const onReconnect = () => {
@@ -176,6 +224,7 @@ export class WorldScene extends Phaser.Scene {
     };
     const onLeave = () => {
       this.connected = false;
+      this.chestPanel.close();
       setNotice(() => showConnectionLost(toMenu));
     };
     room.onDrop(onDrop);
@@ -210,6 +259,8 @@ export class WorldScene extends Phaser.Scene {
     this.players.update((p) => this.prediction.pos(p));
     this.dinoView.update(now, (d) => this.prediction.pos(d));
     this.interact.update(now);
+    this.night.update(now, this.room.state.clock);
+    this.updateCrateArrow();
 
     // HUD เป็น HTML อัปเดตทุก 200ms พอ ไม่ต้องทุกเฟรม
     if (now - this.hudTimer > 200) {
@@ -221,7 +272,46 @@ export class WorldScene extends Phaser.Scene {
         this.craftPanel.update(me);
         const pos = this.prediction.pos(me);
         this.feedButton.hidden = !feedTarget(pos.x, pos.y, this.dinoView.list(), (i) => me.inventory.get(i) ?? 0);
+        this.updateChestPanel(me, pos);
+        this.reportLoot(me, now);
       }
+      this.statsHud.updateClock(this.room.state.clock);
     }
+  }
+
+  /** ลูกศรขอบจอ → กล่องเสบียงที่ใกล้ที่สุด (ซ่อนเมื่อกล่องอยู่ในจอ) */
+  private updateCrateArrow() {
+    const me = this.room.state.players.get(this.room.sessionId);
+    const pos = me && this.prediction.pos(me);
+    const crate = pos ? nearestCrate(pos.x, pos.y, this.crates.list()) : null;
+    const cam = this.cameras.main;
+    const view = cam.worldView;
+    const target = crate && {
+      sx: ((crate.tx + 0.5) * TILE_SIZE - view.x) * cam.zoom,
+      sy: ((crate.ty + 0.5) * TILE_SIZE - view.y) * cam.zoom,
+      tiles: crate.tiles,
+    };
+    this.crateArrow.update(target, this.scale.width, this.scale.height);
+  }
+
+  /** หน้าต่างกล่องเก็บของ: อัปเดตตาม state · ปิดเองเมื่อเดินออกนอกระยะหรือกล่องถูกรื้อ */
+  private updateChestPanel(me: Player, pos: { x: number; y: number }) {
+    const key = this.chestPanel.openKey;
+    if (key === null) return;
+    if (!chestStillOpen(pos.x, pos.y, this.structures.get(key))) return this.chestPanel.close();
+    this.chestPanel.update(me.inventory, this.room.state.chests.get(key)?.items);
+  }
+
+  /** กล่องเสบียงที่เพิ่งเปิดหายไปแล้ว → บอกว่าได้อะไร (รอไม่เกิน 3 วิ เผื่อเซิร์ฟเวอร์ไม่ยอม) */
+  private reportLoot(me: Player, now: number) {
+    const pending = this.pendingLoot;
+    if (!pending) return;
+    if (this.crates.has(pending.key)) {
+      if (now - pending.at > 3000) this.pendingLoot = null;
+      return;
+    }
+    this.pendingLoot = null;
+    const gained = lootGained(pending.before, Object.fromEntries(me.inventory.entries()));
+    if (gained.length > 0) toast(lootText(gained));
   }
 }

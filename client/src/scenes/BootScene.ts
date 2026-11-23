@@ -2,12 +2,14 @@ import Phaser from "phaser";
 import { DINO_KINDS, TILE_SIZE } from "@primal/shared";
 import { ASSET_ROOT, SURVIVOR_IDS, TEX, TREE_RECTS } from "../art/ninjaAtlas";
 import { CAMPFIRE_FRAMES, CAMPFIRE_PALETTE } from "../art/campfire";
-import { BAG, BED, BUILD_PALETTE, DOOR, WALL } from "../art/structures";
+import { BAG, BED, BUILD_PALETTE, CHEST, DOOR, WALL } from "../art/structures";
+import { CRATE, LIVING_PALETTE } from "../art/living";
 import { paintTexture } from "../art/paint";
 import { DINO_FRAMES, DINO_PALETTE } from "../art/dinos";
 import { dinoWalkAnim } from "../render/dinos";
 import { CAMPFIRE_ANIM } from "../render/structures";
 import { registerSurvivorAnims } from "../render/survivorAnims";
+import { GLOW_RADIUS, paintGlow } from "../render/night";
 import { showLoadError } from "../ui/loadError";
 
 /** ฉากแรก: โหลดภาพทั้งหมด เตรียม frame ต้นไม้และท่าเดิน แล้วไปหน้าเมนู */
@@ -44,11 +46,15 @@ export class BootScene extends Phaser.Scene {
 
     registerSurvivorAnims(this);
 
-    // กำแพง ประตู ที่นอน ถุงของ — วาดเอง
+    // กำแพง ประตู ที่นอน กล่องเก็บของ ถุงของ ลังเสบียง — วาดเอง
     paintTexture(this, TEX.structure("wall"), [WALL], BUILD_PALETTE);
     paintTexture(this, TEX.structure("door"), [DOOR], BUILD_PALETTE);
     paintTexture(this, TEX.structure("bed"), [BED], BUILD_PALETTE);
+    paintTexture(this, TEX.structure("chest"), [CHEST], BUILD_PALETTE);
     paintTexture(this, TEX.bag, [BAG], BUILD_PALETTE);
+    paintTexture(this, TEX.crate, [CRATE], LIVING_PALETTE);
+    // วงแสงกองไฟตอนกลางคืน (ไล่สีวงกลม ไม่ใช้ระบบ Lights ของ Phaser เพื่อให้มือถือลื่น)
+    paintGlow(this, TEX.glow, GLOW_RADIUS);
 
     // กองไฟวาดเอง: แผ่นภาพ 2 เฟรมเรียงแนวนอน แล้วแบ่งเป็น frame 0/1 ให้ animation
     paintTexture(this, TEX.campfire, CAMPFIRE_FRAMES, CAMPFIRE_PALETTE);

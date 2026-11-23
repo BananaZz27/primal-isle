@@ -1,6 +1,7 @@
 import type { ItemId } from "@primal/shared";
 import { CAMPFIRE_FRAMES, CAMPFIRE_PALETTE } from "./campfire";
-import { BED, BUILD_PALETTE, DOOR, WALL } from "./structures";
+import { BED, BUILD_PALETTE, CHEST, DOOR, WALL } from "./structures";
+import { BANDAGE, BOTTLE, CANNED, LIVING_PALETTE } from "./living";
 import { DINO_PALETTE, MEAT_ICON } from "./dinos";
 
 /**
@@ -83,6 +84,8 @@ export const TEX = {
   structure: (kind: string) => `structure-${kind}`, // กำแพง/ประตู/ที่นอน วาดเองใน BootScene
   bag: "drop-bag",
   dino: (kind: string) => `dino-${kind}`, // วาดเองใน BootScene (2 เฟรม)
+  crate: "supply-crate", // ลังเสบียงมีร่มชูชีพ วาดเองใน BootScene
+  glow: "fire-glow", // วงแสงกองไฟ (ไล่สีวงกลม) สร้างใน BootScene
 };
 
 /** พุ่มไม้ผลไม้ (ทรัพยากร) และตอไม้ (ต้นไม้ที่ถูกตัดหมด) */
@@ -114,6 +117,10 @@ export const ITEM_ICONS: Record<ItemId, Icon> = {
   meat: { kind: "pixels", rows: MEAT_ICON, palette: DINO_PALETTE },
   steak: { kind: "file", path: "items/beaf.png" },
   spear: { kind: "file", path: "items/lance.png" },
+  canned: { kind: "pixels", rows: CANNED, palette: LIVING_PALETTE },
+  bottle: { kind: "pixels", rows: BOTTLE, palette: LIVING_PALETTE },
+  bandage: { kind: "pixels", rows: BANDAGE, palette: LIVING_PALETTE },
+  chest: { kind: "pixels", rows: CHEST, palette: BUILD_PALETTE },
 };
 
 /** ไอคอนค่าสถานะ */

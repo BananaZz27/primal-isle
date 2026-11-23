@@ -1,9 +1,11 @@
 import {
+  ITEM_IDS,
   BALANCE,
   dinoDef,
   inPlaceReach,
   isDinoKind,
   inReach,
+  moveAmount,
   isStructureKind,
   placeCheck,
   STRUCTURE_DEFS,
@@ -12,7 +14,7 @@ import {
   type ItemId,
   type WorldMap,
 } from "@primal/shared";
-import { Drop, Structure, type Player, type WorldState } from "./schema/WorldState.js";
+import { ChestState, Drop, Structure, type Player, type WorldState } from "./schema/WorldState.js";
 import { setCount } from "./survivalSystem.js";
 
 /**
@@ -23,6 +25,7 @@ export class BuildingSystem {
   private occupied: Set<number>;
   private solidTiles = new Set<number>();
   private doorTiles = new Set<number>();
+  private builtTiles = new Set<number>();
   private nextStructure = 0;
   /** เจ้าของของแต่ละชิ้น (token) — เก็บนอก state เพื่อไม่ให้ส่งออกทางเน็ต */
   private owners = new Map<Structure, string>();
@@ -76,8 +79,36 @@ export class BuildingSystem {
     const s = this.state.structures.get(key);
     // ระยะรื้อ = ระยะวาง: ของที่เพิ่งวางต้องรื้อคืนได้จากจุดเดิม
     if (!s || !inPlaceReach(player.x, player.y, s.tx, s.ty)) return;
+    // ของคืนต้องใส่กระเป๋าได้ (ไม่งั้นชิ้นที่รื้อหายไปเฉยๆ) และกล่องต้องว่าง (ไม่งั้นของข้างในหาย)
+    if ((player.inventory.get(s.kind) ?? 0) >= BALANCE.stackMax) return;
+    if ((this.state.chests.get(key)?.items.size ?? 0) > 0) return;
     this.remove(key, player);
   }
+
+  /**
+   * ย้ายของระหว่างกระเป๋ากับกล่องเก็บของ (ข้อความ chest {key, item, n, dir: "put" | "take"})
+   * ทำงานทีละข้อความ (ไม่มีการรอ) จึงสองคนหยิบชิ้นสุดท้ายพร้อมกันได้คนเดียวเสมอ
+   */
+  chest(player: Player, msg: unknown): void {
+    const { key, item, n, dir } = (msg ?? {}) as { key?: unknown; item?: unknown; n?: unknown; dir?: unknown };
+    if (typeof key !== "string" || (dir !== "put" && dir !== "take")) return;
+    const s = this.state.structures.get(key);
+    const box = this.state.chests.get(key);
+    if (!s || !box || !inPlaceReach(player.x, player.y, s.tx, s.ty)) return;
+    const bag = player.inventory;
+    const [from, to, limit] = dir === "put" ? [bag, box.items, BALANCE.chestKinds] : [box.items, bag, Infinity];
+    const id = item as string;
+    const moved = moveAmount(item, n, from.get(id) ?? 0, to.get(id) ?? 0, to.size, limit);
+    if (moved <= 0) return;
+    setMapCount(from, id, (from.get(id) ?? 0) - moved);
+    setMapCount(to, id, (to.get(id) ?? 0) + moved);
+  }
+
+  /** ช่องนี้มีของตกแต่ง/ทรัพยากรไหม (รวมต้นไม้ที่ตัดหมดแล้ว — งอกคืนได้) */
+  readonly decorAt = (tx: number, ty: number): boolean => this.occupied.has(this.key(tx, ty));
+
+  /** มีสิ่งก่อสร้างอยู่ที่ช่องนี้ไหม (กล่องเสบียงห้ามตกทับ) */
+  readonly structureAt = (tx: number, ty: number): boolean => this.builtTiles.has(this.key(tx, ty));
 
   pickup(player: Player, msg: unknown, now: number): void {
     const key = (msg as { key?: unknown } | null)?.key;
@@ -128,16 +159,36 @@ export class BuildingSystem {
   }
 
   /** ใช้ตอนโหลดโลกจากไฟล์ */
-  restore(kind: string, tx: number, ty: number, owner: string): void {
-    if (isStructureKind(kind)) this.add(kind, tx, ty, owner);
+  restore(kind: string, tx: number, ty: number, owner: string, items?: Record<string, number>): void {
+    if (!isStructureKind(kind)) return;
+    const key = this.add(kind, tx, ty, owner);
+    const box = this.state.chests.get(key);
+    if (box && items) {
+      // ไฟล์บันทึกอาจถูกแก้มือ/มาจากเวอร์ชันอื่น: รับเฉพาะของที่มีจริง จำนวนเต็ม 1..99 ไม่เกินจำนวนชนิดที่กล่องรับได้
+      for (const id of ITEM_IDS) {
+        const n = Math.floor(Number(Object.prototype.hasOwnProperty.call(items, id) ? items[id] : 0));
+        if (!(n > 0) || box.items.size >= BALANCE.chestKinds) continue;
+        box.items.set(id, Math.min(BALANCE.stackMax, n));
+      }
+    }
   }
 
-  private add(kind: string, tx: number, ty: number, owner: string) {
+  /** ของในกล่องเก็บของ (ใช้ตอนบันทึก) */
+  chestItems(key: string): Record<string, number> | undefined {
+    const box = this.state.chests.get(key);
+    return box ? Object.fromEntries(box.items.entries()) : undefined;
+  }
+
+  private add(kind: string, tx: number, ty: number, owner: string): string {
     const s = new Structure({ kind, tx, ty });
+    const key = String(this.nextStructure++);
     this.owners.set(s, owner);
-    this.state.structures.set(String(this.nextStructure++), s);
+    this.state.structures.set(key, s);
+    this.builtTiles.add(this.key(tx, ty));
+    if (kind === "chest") this.state.chests.set(key, new ChestState());
     if (isStructureKind(kind) && STRUCTURE_DEFS[kind].solid) this.solidTiles.add(this.key(tx, ty));
     if (kind === "door") this.doorTiles.add(this.key(tx, ty));
+    return key;
   }
 
   private remove(key: string, refundTo: Player) {
@@ -147,6 +198,8 @@ export class BuildingSystem {
     this.owners.delete(s);
     this.solidTiles.delete(this.key(s.tx, s.ty));
     this.doorTiles.delete(this.key(s.tx, s.ty));
+    this.builtTiles.delete(this.key(s.tx, s.ty));
+    this.state.chests.delete(key);
     const item = s.kind as ItemId;
     setCount(refundTo, item, Math.min(BALANCE.stackMax, (refundTo.inventory.get(item) ?? 0) + 1));
   }
@@ -154,4 +207,10 @@ export class BuildingSystem {
   private key(tx: number, ty: number) {
     return ty * this.map.size + tx;
   }
+}
+
+/** ตั้งจำนวนของใน map (0 = ลบออก) — ใช้ได้ทั้งกระเป๋าและกล่อง */
+function setMapCount(m: { set(k: string, v: number): unknown; delete(k: string): unknown }, item: string, count: number) {
+  if (count <= 0) m.delete(item);
+  else m.set(item, count);
 }

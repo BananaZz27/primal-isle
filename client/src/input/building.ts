@@ -1,4 +1,4 @@
-import { inReach, PLAYER_HALF, TILE_SIZE } from "@primal/shared";
+import { inPlaceReach, inReach, PLAYER_HALF, TILE_SIZE } from "@primal/shared";
 import type { Facing } from "../render/facing";
 
 const tileOf = (v: number) => Math.floor(v / TILE_SIZE);
@@ -44,4 +44,21 @@ export function nearestInReach<T extends { tx: number; ty: number }>(
     }
   }
   return best;
+}
+
+/**
+ * สิ่งก่อสร้างที่ปุ่ม 🪓 จะรื้อ: ชิ้นที่ใกล้ที่สุดในระยะวาง — ข้ามกล่องเก็บของที่ยังมีของ (เซิร์ฟเวอร์ไม่ยอมรื้ออยู่แล้ว
+ * ถ้าเลือกมันจะกดแล้วไม่เกิดอะไร และรื้อกำแพงข้างๆ ไม่ได้)
+ * ในระยะมีแต่กล่องที่มีของ → { blocked: "chest" } ให้บอกผู้เล่นว่าต้องเอาของออกก่อน · ไม่มีอะไร → null
+ */
+export function demolishTarget(
+  px: number,
+  py: number,
+  structures: { key: string; kind: string; tx: number; ty: number }[],
+  chestItemKinds: (key: string) => number,
+): { key: string } | { blocked: "chest" } | null {
+  const full = (s: { key: string; kind: string }) => s.kind === "chest" && chestItemKinds(s.key) > 0;
+  const target = nearestInReach(px, py, structures.filter((s) => !full(s)), inPlaceReach);
+  if (target) return { key: target.key };
+  return nearestInReach(px, py, structures.filter(full), inPlaceReach) ? { blocked: "chest" } : null;
 }

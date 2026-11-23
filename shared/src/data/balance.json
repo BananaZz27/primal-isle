@@ -70,6 +70,10 @@
       "wood": 3,
       "stone": 2,
       "fiber": 3
+    },
+    "chest": {
+      "wood": 6,
+      "stone": 2
     }
   },
   "maxCampfires": 30,
@@ -86,6 +90,9 @@
     },
     "bed": {
       "solid": false
+    },
+    "chest": {
+      "solid": true
     }
   },
   "meatFood": 12,
@@ -157,5 +164,77 @@
       "biteCooldownMs": 1500
     }
   },
-  "tamedFollowSpeed": 95
+  "tamedFollowSpeed": 95,
+  "dayLengthSec": 720,
+  "nightFrom": 0.667,
+  "duskSec": 30,
+  "nightAggroMul": 1.5,
+  "homeTimeoutMs": 8000,
+  "consumables": {
+    "berry": {
+      "hunger": 20
+    },
+    "roast": {
+      "hunger": 35
+    },
+    "meat": {
+      "hunger": 12
+    },
+    "steak": {
+      "hunger": 45
+    },
+    "canned": {
+      "hunger": 40
+    },
+    "bottle": {
+      "thirst": 50
+    },
+    "bandage": {
+      "health": 35
+    }
+  },
+  "crateEverySec": 240,
+  "maxCrates": 3,
+  "crateDespawnSec": 600,
+  "crateMinTiles": 10,
+  "loot": [
+    {
+      "item": "canned",
+      "min": 1,
+      "max": 2,
+      "weight": 3
+    },
+    {
+      "item": "bottle",
+      "min": 1,
+      "max": 2,
+      "weight": 3
+    },
+    {
+      "item": "bandage",
+      "min": 1,
+      "max": 2,
+      "weight": 2
+    },
+    {
+      "item": "wood",
+      "min": 5,
+      "max": 10,
+      "weight": 2
+    },
+    {
+      "item": "stone",
+      "min": 5,
+      "max": 10,
+      "weight": 2
+    },
+    {
+      "item": "fiber",
+      "min": 5,
+      "max": 10,
+      "weight": 2
+    }
+  ],
+  "chestKinds": 12,
+  "dayStartSec": 60
 }

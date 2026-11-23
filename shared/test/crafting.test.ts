@@ -5,10 +5,10 @@ const bag = (items: Partial<Record<ItemId, number>>) => (id: ItemId) => items[id
 
 describe("items and recipes", () => {
   it("knows all items in bag order", () =>
-    expect([...ITEM_IDS]).toEqual(["wood", "stone", "berry", "fiber", "axe", "hammer", "campfire", "roast", "wall", "door", "bed", "meat", "steak", "spear"]));
+    expect([...ITEM_IDS]).toEqual(["wood", "stone", "berry", "fiber", "axe", "hammer", "campfire", "roast", "wall", "door", "bed", "meat", "steak", "spear", "canned", "bottle", "bandage", "chest"]));
 
   it("recipes match the design table", () => {
-    expect([...RECIPE_IDS]).toEqual(["axe", "hammer", "campfire", "wall", "door", "bed", "spear"]);
+    expect([...RECIPE_IDS]).toEqual(["axe", "hammer", "campfire", "wall", "door", "bed", "spear", "chest"]);
     expect(recipeCost("axe")).toEqual({ wood: 3, stone: 2, fiber: 2 });
     expect(recipeCost("hammer")).toEqual({ wood: 2, stone: 3, fiber: 2 });
     expect(recipeCost("campfire")).toEqual({ wood: 5, stone: 3 });

@@ -1,15 +1,20 @@
 import { describe, it, expect } from "vitest";
-import { ITEM_IDS } from "@primal/shared";
-import { itemLabel, recipeLabel } from "../src/ui/labels";
+import { ITEM_IDS, RECIPE_IDS } from "@primal/shared";
+import { itemLabel, RECIPE_HINTS, recipeLabel } from "../src/ui/labels";
 import { costChips } from "../src/ui/craftPanel";
 
 describe("labels", () => {
   it("every item has a Thai name", () => {
     expect(ITEM_IDS.map(itemLabel)).toEqual([
       "ไม้", "หิน", "ผลไม้", "เส้นใย", "ขวานหิน", "ค้อนหิน", "กองไฟ", "ผลไม้ย่าง", "กำแพงไม้", "ประตูไม้", "ที่นอน", "เนื้อดิบ", "เนื้อย่าง", "หอก",
+      "อาหารกระป๋อง", "น้ำขวด", "ผ้าพันแผล", "กล่องเก็บของ",
     ]);
   });
   it("recipe names", () => expect(recipeLabel("campfire")).toBe("กองไฟ"));
+  it("every recipe has a hint, including the new chest", () => {
+    for (const id of RECIPE_IDS) expect(RECIPE_HINTS[id].length, id).toBeGreaterThan(0);
+    expect(recipeLabel("chest")).toBe("กล่องเก็บของ");
+  });
 });
 
 describe("costChips", () => {
