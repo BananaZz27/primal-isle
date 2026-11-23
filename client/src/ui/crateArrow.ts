@@ -27,25 +27,39 @@ export interface EdgeArrow {
   angle: number;
 }
 
+/** ระยะเว้นจากขอบจอแต่ละด้าน (px) */
+export interface Insets {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
 /**
  * ลูกศรขอบจอชี้ไปที่ (sx, sy) — พิกัดบนจอของกล่อง (อาจอยู่นอกจอ)
- * กล่องอยู่ในจอ → null (เห็นเองแล้ว) · นอกจอ → จุดบนขอบจอ (หดเข้ามา margin) ตามแนวจากกลางจอไปหากล่อง
+ * กล่องอยู่ในจอ → null (เห็นเองแล้ว) · นอกจอ → จุดบนกรอบด้านใน (หดเข้ามาตาม inset แต่ละด้าน)
+ * ตามแนวจากกลางจอไปหากล่อง — inset ด้านล่างใหญ่กว่า จะได้ไม่ไปซ่อนหลังแถบกระเป๋า
  */
-export function edgeArrow(sx: number, sy: number, width: number, height: number, margin: number): EdgeArrow | null {
+export function edgeArrow(sx: number, sy: number, width: number, height: number, inset: Insets): EdgeArrow | null {
   if (sx >= 0 && sx <= width && sy >= 0 && sy <= height) return null;
   const cx = width / 2;
   const cy = height / 2;
   const dx = sx - cx;
   const dy = sy - cy;
-  const hx = Math.max(0, cx - margin);
-  const hy = Math.max(0, cy - margin);
+  const minX = inset.left;
+  const maxX = Math.max(minX, width - inset.right);
+  const minY = inset.top;
+  const maxY = Math.max(minY, height - inset.bottom);
   // ยืดเส้นจากกลางจอจนชนกรอบด้านใน (ด้านที่ชนก่อน)
-  const scale = Math.min(dx === 0 ? Infinity : hx / Math.abs(dx), dy === 0 ? Infinity : hy / Math.abs(dy));
-  return { x: cx + dx * scale, y: cy + dy * scale, angle: Math.atan2(dy, dx) };
+  const tx = dx > 0 ? (maxX - cx) / dx : dx < 0 ? (minX - cx) / dx : Infinity;
+  const ty = dy > 0 ? (maxY - cy) / dy : dy < 0 ? (minY - cy) / dy : Infinity;
+  const t = Math.max(0, Math.min(tx, ty));
+  const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+  return { x: clamp(cx + dx * t, minX, maxX), y: clamp(cy + dy * t, minY, maxY), angle: Math.atan2(dy, dx) };
 }
 
-/** ระยะห่างจากขอบจอ (px) — พ้นป้ายมุมจอและ joystick */
-const MARGIN = 44;
+/** ระยะเว้นจากขอบจอ (px) — ด้านล่างพ้นแถบกระเป๋า ด้านบนพ้นป้ายมุมจอ */
+const INSETS: Insets = { top: 56, right: 44, bottom: 96, left: 44 };
 
 /** ลูกศร 📦 ที่ขอบจอ ชี้ไปกล่องเสบียงที่ใกล้ที่สุด พร้อมบอกระยะ (HTML ลอยทับเกม แตะทะลุได้) */
 export class CrateArrow {
@@ -61,7 +75,7 @@ export class CrateArrow {
 
   /** sx, sy = ตำแหน่งกล่องบนจอ · null = ไม่มีกล่องบนเกาะ */
   update(target: { sx: number; sy: number; tiles: number } | null, width: number, height: number): void {
-    const arrow = target && edgeArrow(target.sx, target.sy, width, height, MARGIN);
+    const arrow = target && edgeArrow(target.sx, target.sy, width, height, INSETS);
     this.root.hidden = !arrow;
     if (!arrow || !target) return;
     this.root.style.left = `${arrow.x}px`;

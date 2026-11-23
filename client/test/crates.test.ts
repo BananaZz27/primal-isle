@@ -55,7 +55,7 @@ describe("nearestCrate", () => {
 });
 
 describe("edgeArrow (screen 800×400, margin 30)", () => {
-  const arrow = (x: number, y: number) => edgeArrow(x, y, 800, 400, 30);
+  const arrow = (x: number, y: number) => edgeArrow(x, y, 800, 400, { top: 30, right: 30, bottom: 30, left: 30 });
 
   it("hidden while the crate is on screen", () => expect(arrow(700, 100)).toBeNull());
 
@@ -78,6 +78,27 @@ describe("edgeArrow (screen 800×400, margin 30)", () => {
     expect(a.x).toBeGreaterThanOrEqual(30);
     expect(a.y).toBeLessThanOrEqual(370);
     expect(a.angle).toBeCloseTo(Math.atan2(1200, -1400));
+  });
+});
+
+describe("edgeArrow keeps clear of the inventory bar", () => {
+  it("a crate straight below lands above the bottom inset, still pointing down", () => {
+    const a = edgeArrow(400, 3000, 800, 400, { top: 30, right: 30, bottom: 90, left: 30 })!;
+    expect(a.y).toBeCloseTo(310);
+    expect(a.x).toBeCloseTo(400);
+    expect(a.angle).toBeCloseTo(Math.PI / 2);
+  });
+
+  it("the arrow always stays inside the inset box, whatever the direction", () => {
+    const inset = { top: 60, right: 44, bottom: 90, left: 44 };
+    for (let deg = 0; deg < 360; deg += 7) {
+      const r = (deg * Math.PI) / 180;
+      const a = edgeArrow(400 + Math.cos(r) * 5000, 200 + Math.sin(r) * 5000, 800, 400, inset)!;
+      expect(a.x).toBeGreaterThanOrEqual(inset.left - 1e-6);
+      expect(a.x).toBeLessThanOrEqual(800 - inset.right + 1e-6);
+      expect(a.y).toBeGreaterThanOrEqual(inset.top - 1e-6);
+      expect(a.y).toBeLessThanOrEqual(400 - inset.bottom + 1e-6);
+    }
   });
 });
 
