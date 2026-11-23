@@ -13,6 +13,8 @@ export const BUILD_PALETTE: Record<string, string> = {
   b: "#8a6a3e", // ถุงผ้า
   B: "#b8925a", // ถุงสว่าง
   t: "#5a3a1e", // เชือก
+  m: "#6e737a", // แถบเหล็ก
+  y: "#f2c230", // กลอนทองเหลือง
 };
 
 /** กำแพงไม้: ซุงตั้ง 4 ต้น ปลายแหลม */
@@ -72,6 +74,26 @@ export const BED = [
   ".kkkkkkkkkkkkkk.",
   "................",
   "................",
+  "................",
+];
+
+/** กล่องเก็บของ: หีบไม้คาดแถบเหล็ก มีกลอนตรงกลาง */
+export const CHEST = [
+  "................",
+  "................",
+  "................",
+  "..kkkkkkkkkkkk..",
+  ".kLLLLLLLLLLLLk.",
+  ".kWWWWWWWWWWWWk.",
+  ".kmmmmmmmmmmmmk.",
+  ".kWWWWWkkWWWWWk.",
+  ".kkkkkkyykkkkkk.",
+  ".kWWWWWyyWWWWWk.",
+  ".kWLLLLkkLLLLWk.",
+  ".kmmmmmmmmmmmmk.",
+  ".kWLLLLLLLLLLWk.",
+  ".kwwwwwwwwwwwwk.",
+  ".kkkkkkkkkkkkkk.",
   "................",
 ];
 

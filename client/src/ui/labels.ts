@@ -1,4 +1,4 @@
-import type { ItemId, RecipeId } from "@primal/shared";
+import { BALANCE, type ItemId, type RecipeId } from "@primal/shared";
 
 const ITEM_LABELS: Record<ItemId, string> = {
   wood: "ไม้",
@@ -15,6 +15,10 @@ const ITEM_LABELS: Record<ItemId, string> = {
   meat: "เนื้อดิบ",
   steak: "เนื้อย่าง",
   spear: "หอก",
+  canned: "อาหารกระป๋อง",
+  bottle: "น้ำขวด",
+  bandage: "ผ้าพันแผล",
+  chest: "กล่องเก็บของ",
 };
 
 /** ชื่อของภาษาไทย */
@@ -36,4 +40,5 @@ export const RECIPE_HINTS: Record<RecipeId, string> = {
   door: "ช่องทางเข้าฐาน เดินผ่านได้",
   bed: "สลบแล้วฟื้นที่นี่ (คนละ 1 ที่)",
   spear: "ตีไดโนแรงขึ้น (12 ต่อครั้ง)",
+  chest: `เก็บของได้ ${BALANCE.chestKinds} ชนิด ทุกคนในโลกใช้ร่วมกัน`,
 };

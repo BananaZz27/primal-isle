@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { Callbacks } from "@colyseus/sdk";
 import type { Player } from "@primal/server/schema";
 import { SURVIVOR_IDS, TEX } from "../art/ninjaAtlas";
+import { PLAYER_NAME_Y } from "./labelLayout";
 import { CAMERA_ZOOM } from "../config";
 import type { WorldRoom } from "../net/connection";
 import { facingFrom, walkFrames, type Facing } from "./facing";
@@ -82,7 +83,7 @@ export class PlayerSprites {
     const sprite = this.scene.add.sprite(0, 0, TEX.survivor(survivorId), walkFrames("down")[0]).setOrigin(0.5, 0.75);
 
     const label = this.scene.add
-      .text(0, -13, player.name, {
+      .text(0, PLAYER_NAME_Y, player.name, {
         fontFamily: "system-ui, sans-serif",
         fontSize: "7px",
         color: isSelf ? "#ffe680" : "#ffffff",

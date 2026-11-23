@@ -4,6 +4,7 @@ import { dinoDef, isDinoKind } from "@primal/shared";
 import type { Dino } from "@primal/server/schema";
 import { TEX } from "../art/ninjaAtlas";
 import { CAMERA_ZOOM } from "../config";
+import { tamedTagY } from "./labelLayout";
 import type { DinoOnScreen } from "../input/feed";
 import type { WorldRoom } from "../net/connection";
 
@@ -27,7 +28,7 @@ interface DinoSprite {
 
 /**
  * วาดไดโนทุกตัวตาม state: เพิ่ม/ลบอัตโนมัติ, หันซ้าย/ขวาตาม facing, เดิน = เล่นท่าเดิน
- * แถบเลือดขึ้นเมื่อเลือดไม่เต็ม · ตัวที่เทมแล้วมีป้าย ❤️ ชื่อเจ้าของ · โดนตีแล้วกะพริบขาว
+ * แถบเลือดขึ้นเมื่อเลือดไม่เต็ม · ตัวที่เทมแล้วมีป้าย ❤️ ชื่อเจ้าของใต้เท้า · โดนตีแล้วกะพริบขาว
  */
 export class DinoView {
   private views = new Map<string, DinoSprite>();
@@ -90,14 +91,14 @@ export class DinoView {
     const sprite = this.scene.add.sprite(0, 0, TEX.dino(dino.kind), 0).setOrigin(0.5, 0.65);
     const bar = this.scene.add.graphics();
     const tag = this.scene.add
-      .text(0, -half - 8, "", {
+      .text(0, tamedTagY(half), "", {
         fontFamily: "system-ui, sans-serif",
         fontSize: "6px",
         color: "#ffd0e0",
         stroke: "#000000",
         strokeThickness: 2,
       })
-      .setOrigin(0.5, 1)
+      .setOrigin(0.5, 0)
       .setResolution(CAMERA_ZOOM * 2);
     const container = this.scene.add.container(dino.x, dino.y, [sprite, bar, tag]);
     this.views.set(key, {

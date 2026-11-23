@@ -1,4 +1,5 @@
 import type { Player } from "@primal/server/schema";
+import { dayChip, dayPhase } from "../render/dayNight";
 import { STAT_ICONS } from "../art/ninjaAtlas";
 import { el, uiRoot } from "./dom";
 import { iconElement } from "./icons";
@@ -15,11 +16,12 @@ const STATS = [
   { key: "thirst", label: "น้ำ", colour: "#3498db" },
 ] as const;
 
-/** แถบเลือด/ความอิ่ม/น้ำ มุมซ้ายบน + ข้อความตอนสลบแล้วฟื้น */
+/** แถบเลือด/ความอิ่ม/น้ำ มุมซ้ายบน + ชิป ☀️/🌙 บอกช่วงเวลา + ข้อความตอนสลบแล้วฟื้น */
 export class StatsHud {
   private root = el("div", { className: "panel stats" });
   private fills = new Map<string, HTMLElement>();
   private lastHealth = 100;
+  private chip = el("div", { className: "daychip" });
 
   constructor() {
     for (const s of STATS) {
@@ -30,6 +32,7 @@ export class StatsHud {
       this.root.append(el("div", { className: "stat" }, iconElement(STAT_ICONS[s.key]), bar));
       this.fills.set(s.key, fill);
     }
+    this.root.append(this.chip);
     uiRoot().append(this.root);
   }
 
@@ -43,6 +46,14 @@ export class StatsHud {
     // เลือดเกือบหมดแล้วกลับมาเต็ม = เพิ่งสลบแล้วฟื้นที่จุดเกิด
     if (this.lastHealth < 5 && player.health >= 99) toast("😵 สลบไป… ฟื้นที่จุดเกิดแล้ว");
     this.lastHealth = player.health;
+  }
+
+  /** ชิปช่วงเวลา (clock = วินาทีของวันจากเซิร์ฟเวอร์) */
+  updateClock(clockSec: number): void {
+    const phase = dayPhase(clockSec);
+    this.chip.textContent = dayChip(phase);
+    this.chip.className = `daychip ${phase}`;
+    this.chip.title = phase === "day" ? "" : "กลางคืนแร็พเตอร์ไล่ไกลขึ้น — อยู่ใกล้กองไฟหรือในฐาน";
   }
 
   destroy(): void {

@@ -37,17 +37,17 @@ describe("hitting dinos", () => {
   const tree = [{ kind: DecorKind.Tree, tx: 6, ty: 5, variant: 0 }];
 
   it("a wild dino in reach comes before resources", () => {
-    const t = pickTarget(P.x, P.y, tree, map, () => false, [], false, [], [dino("d1", "compy", -20)]);
+    const t = pickTarget(P.x, P.y, { decor: tree, map, isDepleted: () => false, dinos: [dino("d1", "compy", -20)] });
     expect(t).toEqual({ kind: "dino", key: "d1" });
   });
 
   it("picks the nearest wild one and never a tamed one", () => {
     const dinos = [dino("near-tamed", "compy", 12, "เพื่อน"), dino("far", "compy", -28), dino("mid", "raptor", 20)];
-    expect(pickTarget(P.x, P.y, [], map, () => false, [], false, [], dinos)).toEqual({ kind: "dino", key: "mid" });
+    expect(pickTarget(P.x, P.y, { decor: [], map, isDepleted: () => false, dinos })).toEqual({ kind: "dino", key: "mid" });
   });
 
   it("out of reach → falls back to the resource", () => {
-    const t = pickTarget(P.x, P.y, tree, map, () => false, [], false, [], [dino("d1", "compy", -60)]);
+    const t = pickTarget(P.x, P.y, { decor: tree, map, isDepleted: () => false, dinos: [dino("d1", "compy", -60)] });
     expect(t).toEqual({ kind: "node", id: 0 });
   });
 });

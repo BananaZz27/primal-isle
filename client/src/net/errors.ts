@@ -10,6 +10,8 @@ export function describeJoinError(err: unknown): string {
   const message = String((err as { message?: unknown } | null | undefined)?.message ?? "");
   if (message.includes("world not found")) return "ไม่พบโลกนี้ ตรวจรหัสอีกครั้ง";
   if (message.includes("already playing")) return "คุณเล่นโลกนี้อยู่ในอีกหน้าต่างแล้ว";
+  // ห้องเต็ม = ล็อก → joinById ไม่เจอห้อง → ลองเปิดจากไฟล์ → เซิร์ฟเวอร์ตอบว่าห้องเปิดอยู่แล้ว
+  if (message.includes("world already open")) return `โลกเต็มแล้ว (สูงสุด ${MAX_PLAYERS} คน)`;
   if (code === ErrorCode.MATCHMAKE_INVALID_ROOM_ID) {
     return `ไม่พบโลกนี้ หรือโลกเต็มแล้ว (สูงสุด ${MAX_PLAYERS} คน)`;
   }

@@ -22,28 +22,28 @@ describe("pickTarget", () => {
     const decor = [node(DecorKind.Tree, 4, 3), node(DecorKind.Bush, 3, 4)];
     const p = at(3, 3);
     p.y += 4; // ใกล้พุ่มไม้ (ล่าง) มากกว่าต้นไม้ (ขวา)
-    expect(pickTarget(p.x, p.y, decor, map, () => false)).toEqual({ kind: "node", id: 1 });
+    expect(pickTarget(p.x, p.y, { decor, map, isDepleted: () => false })).toEqual({ kind: "node", id: 1 });
   });
 
   it("skips used-up resources", () => {
     const decor = [node(DecorKind.Tree, 4, 3), node(DecorKind.Bush, 3, 4)];
     const p = at(3, 3);
-    expect(pickTarget(p.x, p.y, decor, map, (id) => id === 0)).toEqual({ kind: "node", id: 1 });
+    expect(pickTarget(p.x, p.y, { decor, map, isDepleted: (id) => id === 0 })).toEqual({ kind: "node", id: 1 });
   });
 
   it("ignores flowers", () => {
     const p = at(3, 3);
-    expect(pickTarget(p.x, p.y, [node(DecorKind.Flower, 3, 4)], map, () => false)).toBeNull();
+    expect(pickTarget(p.x, p.y, { decor: [node(DecorKind.Flower, 3, 4)], map, isDepleted: () => false })).toBeNull();
   });
 
   it("falls back to drinking when next to water", () => {
     const p = at(1, 3);
-    expect(pickTarget(p.x, p.y, [], map, () => false)).toEqual({ kind: "water" });
+    expect(pickTarget(p.x, p.y, { decor: [], map, isDepleted: () => false })).toEqual({ kind: "water" });
   });
 
   it("returns null when nothing is in reach", () => {
     const p = at(3, 3);
-    expect(pickTarget(p.x, p.y, [node(DecorKind.Tree, 6, 6)], map, () => false)).toBeNull();
+    expect(pickTarget(p.x, p.y, { decor: [node(DecorKind.Tree, 6, 6)], map, isDepleted: () => false })).toBeNull();
   });
 });
 
@@ -53,22 +53,22 @@ describe("pickTarget with a campfire", () => {
 
   it("cooks at a nearby campfire when holding a berry", () => {
     const p = at(3, 3);
-    expect(pickTarget(p.x, p.y, [], map, () => false, fire, true)).toEqual({ kind: "campfire" });
+    expect(pickTarget(p.x, p.y, { decor: [], map, isDepleted: () => false, campfires: fire, canCook: true })).toEqual({ kind: "campfire" });
   });
 
   it("no berry → the campfire is ignored", () => {
     const p = at(3, 3);
-    expect(pickTarget(p.x, p.y, [], map, () => false, fire, false)).toBeNull();
+    expect(pickTarget(p.x, p.y, { decor: [], map, isDepleted: () => false, campfires: fire })).toBeNull();
   });
 
   it("a resource in reach still comes first", () => {
     const p = at(3, 3);
-    expect(pickTarget(p.x, p.y, [node(DecorKind.Tree, 4, 3)], map, () => false, fire, true)).toEqual({ kind: "node", id: 0 });
+    expect(pickTarget(p.x, p.y, { decor: [node(DecorKind.Tree, 4, 3)], map, isDepleted: () => false, campfires: fire, canCook: true })).toEqual({ kind: "node", id: 0 });
   });
 
   it("a campfire out of reach is ignored", () => {
     const p = at(3, 3);
-    expect(pickTarget(p.x, p.y, [], map, () => false, [{ tx: 5, ty: 5 }], true)).toBeNull();
+    expect(pickTarget(p.x, p.y, { decor: [], map, isDepleted: () => false, campfires: [{ tx: 5, ty: 5 }], canCook: true })).toBeNull();
   });
 });
 
@@ -76,7 +76,7 @@ describe("pickTarget with a dropped bag", () => {
   const map = island();
   it("a bag in reach comes before everything else", () => {
     const p = at(3, 3);
-    expect(pickTarget(p.x, p.y, [node(DecorKind.Tree, 4, 3)], map, () => false, [], false, [{ key: "b1", tx: 3, ty: 4 }])).toEqual({ kind: "drop", key: "b1" });
+    expect(pickTarget(p.x, p.y, { decor: [node(DecorKind.Tree, 4, 3)], map, isDepleted: () => false, drops: [{ key: "b1", tx: 3, ty: 4 }] })).toEqual({ kind: "drop", key: "b1" });
   });
 });
 

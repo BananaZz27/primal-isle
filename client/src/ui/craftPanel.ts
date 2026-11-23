@@ -77,6 +77,10 @@ export class CraftPanel {
     }
   }
 
+  close(): void {
+    this.setOpen(false);
+  }
+
   destroy(): void {
     this.toggle.remove();
     this.root.remove();

@@ -16,7 +16,7 @@ interface Placed {
 }
 
 /**
- * วาดสิ่งที่ผู้เล่นวาง (กองไฟ กำแพง ประตู ที่นอน) และถุงของที่ตก ตาม state — เพิ่ม/ลบอัตโนมัติ
+ * วาดสิ่งที่ผู้เล่นวาง (กองไฟ กำแพง ประตู ที่นอน กล่องเก็บของ) และถุงของที่ตก ตาม state — เพิ่ม/ลบอัตโนมัติ
  * และเป็นแหล่งข้อมูลให้การชน (กำแพง) ฝั่ง client ใช้ทำนาย
  */
 export class StructureView {
@@ -49,6 +49,16 @@ export class StructureView {
 
   campfires(): Placed[] {
     return [...this.placed.values()].filter((p) => p.kind === "campfire");
+  }
+
+  /** กล่องเก็บของทั้งหมด */
+  chests(): Placed[] {
+    return [...this.placed.values()].filter((p) => p.kind === "chest");
+  }
+
+  /** สิ่งก่อสร้าง key นี้ (ยังอยู่ไหม/อยู่ช่องไหน) */
+  get(key: string): Placed | undefined {
+    return this.placed.get(key);
   }
 
   all(): Placed[] {
