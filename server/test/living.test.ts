@@ -5,6 +5,7 @@ import { ColyseusTestServer, boot } from "@colyseus/testing";
 import {
   BALANCE,
   crateSpawnOk,
+  DecorKind,
   generateDecor,
   generateWorld,
   isNight,
@@ -93,6 +94,26 @@ describe("living world", () => {
       for (let i = 0; i < 20; i++) crates.spawnRandom(room.clock.currentTime);
       expect(room.state.crates.size).toBeGreaterThan(0);
       for (const c of room.state.crates.values()) expect(crateSpawnOk(map, solid, c.tx, c.ty, [p])).toBe(true);
+    });
+
+    it("never land on a wall, a chest or any decor tile (a tree could regrow on top)", async () => {
+      const { room, p, send } = await setup({ wall: 1 });
+      await placeChest(room, p, send);
+      const chestAt = [...room.state.structures.values()].find((s) => s.kind === "chest")!;
+      const w = openTile(40);
+      Object.assign(p, centre(w.tx - 1, w.ty));
+      await send("place", { item: "wall", tx: w.tx, ty: w.ty });
+      expect([...room.state.structures.values()].some((s) => s.kind === "wall")).toBe(true);
+      const bush = generateDecor(map).find((d) => d.kind === DecorKind.Bush && isWalkable(tileAt(map, d.tx, d.ty)))!;
+      const free = openTile(80);
+      Object.assign(p, centre(free.tx + 30, free.ty)); // ผู้เล่นอยู่ไกลช่องว่าง (≥ 10 ช่อง) จะได้ไม่ใช่เหตุที่ถูกปฏิเสธ
+      const tiles = [chestAt, { tx: w.tx, ty: w.ty }, bush, free];
+      // สุ่มแบบกำหนดเอง: แต่ละรอบ spawnRandom อ่าน rand() 2 ครั้ง (tx, ty)
+      const seq = tiles.flatMap((t) => [(t.tx + 0.5) / map.size, (t.ty + 0.5) / map.size]);
+      const crates = (room as any).crates;
+      crates.rand = () => seq.shift() ?? 0;
+      crates.spawnRandom(room.clock.currentTime);
+      expect([...room.state.crates.values()].map((c) => [c.tx, c.ty])).toEqual([[free.tx, free.ty]]);
     });
 
     it("open once, in reach, for 2–3 kinds of loot", async () => {
@@ -229,6 +250,27 @@ describe("living world", () => {
     );
     const room = await colyseus.createRoom<WorldRoom>("world", { code: "VERTWB" });
     expect(room.state.seed).toBe(SEED);
+  });
+
+  it("a save with junk chest items keeps only real items, whole numbers, up to the kind limit", async () => {
+    const t = openTile();
+    const kinds = ["wood", "stone", "berry", "fiber", "axe", "hammer", "campfire", "roast", "wall", "door", "bed", "meat", "steak", "spear"];
+    const items: Record<string, number> = { bogus: 3, toString: 1, berry: 2.7 };
+    for (const k of kinds) items[k] ??= 1;
+    writeFileSync(
+      join(process.env.DATA_DIR!, "CHSTWB.json"),
+      JSON.stringify({
+        version: 3, code: "CHSTWB", seed: SEED, savedAt: 1, nodes: [], drops: [], players: {}, dinos: [], crates: [], clock: 100,
+        structures: [{ kind: "chest", tx: t.tx, ty: t.ty, owner: "", items }],
+      }),
+    );
+    const room = await colyseus.createRoom<WorldRoom>("world", { code: "CHSTWB" });
+    const box = [...room.state.chests.values()][0];
+    const saved = Object.fromEntries(box.items.entries());
+    expect(Object.keys(saved).every((k) => kinds.includes(k))).toBe(true);
+    expect(Object.values(saved).every((n) => Number.isInteger(n) && n > 0)).toBe(true);
+    expect(box.items.size).toBe(BALANCE.chestKinds);
+    expect(saved.berry).toBe(2);
   });
 
   it("a tamed dino shows its owner's new name after they rejoin", async () => {

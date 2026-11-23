@@ -49,6 +49,11 @@ export class NightView {
     this.overlay.setVisible(dark);
     if (dark) this.overlay.setAlpha(alpha).setDisplaySize(this.scene.scale.width, this.scene.scale.height);
 
+    if (!dark) {
+      // กลางวัน: ซ่อนวงแสงที่มีอยู่ แล้วไม่ต้องทำอะไรต่อ (ไม่สร้างรายการกองไฟทุกเฟรม)
+      this.glows.forEach((g) => g.setVisible(false));
+      return;
+    }
     const glow = glowAlpha(clockSec);
     const live = new Set<string>();
     for (const c of this.campfires()) {
@@ -60,9 +65,9 @@ export class NightView {
         img = this.scene.add.image(x, y, TEX.glow).setBlendMode(Phaser.BlendModes.ADD).setDepth(NIGHT_DEPTH + 1);
         this.glows.set(c.key, img);
       }
-      img.setVisible(dark);
+      img.setVisible(true);
       // ไฟวูบวาบนิดๆ (แต่ละกองไม่พร้อมกัน)
-      if (dark) img.setAlpha(glow * (0.88 + 0.12 * Math.sin(now / 130 + c.tx * 7 + c.ty * 3)));
+      img.setAlpha(glow * (0.88 + 0.12 * Math.sin(now / 130 + c.tx * 7 + c.ty * 3)));
     }
     for (const [key, img] of this.glows) {
       if (live.has(key)) continue;

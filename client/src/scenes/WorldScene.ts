@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { generateDecor, generateWorld, inPlaceReach, solidFromNodes, TILE_SIZE } from "@primal/shared";
+import { generateDecor, generateWorld, solidFromNodes, TILE_SIZE } from "@primal/shared";
 import type { Player } from "@primal/server/schema";
 import { CAMERA_ZOOM } from "../config";
 import { combineInputs } from "../input/combine";
@@ -20,7 +20,7 @@ import { CrateArrow, nearestCrate } from "../ui/crateArrow";
 import { lootGained, lootText } from "../ui/loot";
 import { CraftPanel } from "../ui/craftPanel";
 import { el, uiRoot } from "../ui/dom";
-import { frontTile, nearestInReach } from "../input/building";
+import { demolishTarget, frontTile } from "../input/building";
 import { buildTilemap } from "../render/tilemap";
 import { showConnectionLost, showReconnecting } from "../ui/hud";
 import { InventoryHud } from "../ui/inventory";
@@ -141,14 +141,21 @@ export class WorldScene extends Phaser.Scene {
       const { tx, ty } = frontTile(pos.x, pos.y, this.players.facingOf(this.room.sessionId));
       this.room.send("place", { item, tx, ty });
     });
-    this.craftPanel = new CraftPanel(this.inventoryHud.element, (recipe) => this.room.send("craft", { recipe }));
+    this.craftPanel = new CraftPanel(
+      this.inventoryHud.element,
+      (recipe) => this.room.send("craft", { recipe }),
+      () => this.chestPanel.close(), // หน้าคราฟต์กับหน้าต่างกล่องใช้ที่เดียวกันบนจอ — เปิดทีละอัน
+    );
     // ปุ่มรื้อ: รื้อสิ่งก่อสร้างที่ใกล้ที่สุดในระยะ (ได้ของคืน)
     const demolish = el("button", { className: "craft-toggle", text: "🪓" });
     demolish.title = "รื้อสิ่งก่อสร้างที่ใกล้ที่สุด";
     demolish.addEventListener("click", () => {
       const pos = myPos();
-      const target = pos && nearestInReach(pos.x, pos.y, structures.all(), inPlaceReach);
-      if (target) this.room.send("demolish", { key: target.key });
+      if (!pos) return;
+      const kinds = (key: string) => this.room.state.chests.get(key)?.items.size ?? 0;
+      const target = demolishTarget(pos.x, pos.y, structures.all(), kinds);
+      if (target && "key" in target) this.room.send("demolish", { key: target.key });
+      else if (target) toast("เอาของออกจากกล่องก่อน จึงจะรื้อได้");
     });
     this.inventoryHud.element.append(demolish);
     // ปุ่มป้อนอาหาร 🍖 (และปุ่ม F บนคอม): ขึ้นเฉพาะตอนมีไดโนที่เทมได้อยู่ใกล้ และเรามีอาหารที่มันชอบ
@@ -208,6 +215,7 @@ export class WorldScene extends Phaser.Scene {
 
     const onDrop = () => {
       this.connected = false;
+      this.chestPanel.close(); // ข้อความที่กดตอนเน็ตหลุดจะถูกส่งซ้ำทีหลังด้วยจำนวนเก่า — ปิดไว้ก่อน
       setNotice(() => showReconnecting(toMenu));
     };
     const onReconnect = () => {
@@ -216,6 +224,7 @@ export class WorldScene extends Phaser.Scene {
     };
     const onLeave = () => {
       this.connected = false;
+      this.chestPanel.close();
       setNotice(() => showConnectionLost(toMenu));
     };
     room.onDrop(onDrop);

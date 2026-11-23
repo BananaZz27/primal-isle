@@ -73,14 +73,20 @@ export class CrateArrow {
     uiRoot().append(this.root);
   }
 
+  /** สิ่งที่เขียนลง DOM ครั้งล่าสุด — เรียกทุกเฟรมได้ แต่แตะ DOM เฉพาะตอนเปลี่ยน (มือถือลื่นกว่า) */
+  private last = "";
+
   /** sx, sy = ตำแหน่งกล่องบนจอ · null = ไม่มีกล่องบนเกาะ */
   update(target: { sx: number; sy: number; tiles: number } | null, width: number, height: number): void {
     const arrow = target && edgeArrow(target.sx, target.sy, width, height, INSETS);
+    const next = arrow && target ? `${Math.round(arrow.x)},${Math.round(arrow.y)},${arrow.angle.toFixed(2)},${target.tiles}` : "";
+    if (next === this.last) return;
+    this.last = next;
     this.root.hidden = !arrow;
     if (!arrow || !target) return;
-    this.root.style.left = `${arrow.x}px`;
-    this.root.style.top = `${arrow.y}px`;
-    this.pointer.style.transform = `rotate(${arrow.angle}rad)`;
+    this.root.style.left = `${Math.round(arrow.x)}px`;
+    this.root.style.top = `${Math.round(arrow.y)}px`;
+    this.pointer.style.transform = `rotate(${arrow.angle.toFixed(2)}rad)`;
     this.label.textContent = `📦 ${target.tiles} ช่อง`;
   }
 

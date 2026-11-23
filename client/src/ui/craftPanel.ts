@@ -33,7 +33,8 @@ export class CraftPanel {
   private lastPlayer: Player | null = null;
 
   /** mount = ที่วางปุ่ม 🔨 (แถวกระเป๋า) */
-  constructor(mount: HTMLElement, onCraft: (recipe: RecipeId) => void) {
+  /** onOpen = เรียกตอนเปิดหน้าคราฟต์ (ใช้ปิดหน้าต่างอื่นที่อยู่ที่เดียวกัน) */
+  constructor(mount: HTMLElement, onCraft: (recipe: RecipeId) => void, private onOpen: () => void = () => {}) {
     this.toggle.title = "คราฟต์";
     this.toggle.addEventListener("click", () => this.setOpen(this.root.hidden));
     this.root.hidden = true;
@@ -87,6 +88,7 @@ export class CraftPanel {
   }
 
   private setOpen(open: boolean) {
+    if (open) this.onOpen();
     this.root.hidden = !open;
     if (open && this.lastPlayer) this.update(this.lastPlayer);
   }

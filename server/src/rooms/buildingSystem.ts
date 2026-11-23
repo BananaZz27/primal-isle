@@ -1,4 +1,5 @@
 import {
+  ITEM_IDS,
   BALANCE,
   dinoDef,
   inPlaceReach,
@@ -103,6 +104,9 @@ export class BuildingSystem {
     setMapCount(to, id, (to.get(id) ?? 0) + moved);
   }
 
+  /** ช่องนี้มีของตกแต่ง/ทรัพยากรไหม (รวมต้นไม้ที่ตัดหมดแล้ว — งอกคืนได้) */
+  readonly decorAt = (tx: number, ty: number): boolean => this.occupied.has(this.key(tx, ty));
+
   /** มีสิ่งก่อสร้างอยู่ที่ช่องนี้ไหม (กล่องเสบียงห้ามตกทับ) */
   readonly structureAt = (tx: number, ty: number): boolean => this.builtTiles.has(this.key(tx, ty));
 
@@ -159,7 +163,14 @@ export class BuildingSystem {
     if (!isStructureKind(kind)) return;
     const key = this.add(kind, tx, ty, owner);
     const box = this.state.chests.get(key);
-    if (box && items) for (const [item, n] of Object.entries(items)) if (n > 0) box.items.set(item, Math.min(BALANCE.stackMax, n));
+    if (box && items) {
+      // ไฟล์บันทึกอาจถูกแก้มือ/มาจากเวอร์ชันอื่น: รับเฉพาะของที่มีจริง จำนวนเต็ม 1..99 ไม่เกินจำนวนชนิดที่กล่องรับได้
+      for (const id of ITEM_IDS) {
+        const n = Math.floor(Number(Object.prototype.hasOwnProperty.call(items, id) ? items[id] : 0));
+        if (!(n > 0) || box.items.size >= BALANCE.chestKinds) continue;
+        box.items.set(id, Math.min(BALANCE.stackMax, n));
+      }
+    }
   }
 
   /** ของในกล่องเก็บของ (ใช้ตอนบันทึก) */

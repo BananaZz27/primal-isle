@@ -157,11 +157,12 @@ export class WorldRoom extends Room<{ state: WorldState; input: MoveInput }> {
         acted: (sessionId, now) => this.survival.acted(sessionId, now),
       },
     );
-    // กล่องเสบียงห้ามตกทับต้นไม้/หิน/สิ่งก่อสร้าง
+    // กล่องเสบียงห้ามตกทับสิ่งก่อสร้าง และช่องที่มีของตกแต่ง/ทรัพยากรทุกชนิด
+    // (รวมต้นไม้ที่ตัดหมดแล้ว — ไม่งั้นต้นไม้งอกคืนทับกล่อง)
     this.crates = new CrateSystem(
       this.state,
       this.map,
-      (tx, ty) => this.solid(tx, ty) || this.building.structureAt(tx, ty),
+      (tx, ty) => this.solid(tx, ty) || this.building.structureAt(tx, ty) || this.building.decorAt(tx, ty),
       this.clock.currentTime,
     );
     if (save) this.restore(save);
