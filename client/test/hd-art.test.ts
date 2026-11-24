@@ -43,3 +43,27 @@ describe("HD samples are 2× the old sizes", () => {
     expect(Array.from(raptor(0).data)).not.toEqual(Array.from(raptor(1).data));
   });
 });
+
+describe("12 dinosaur species drawn from one rig", async () => {
+  const { drawDino } = await import("../src/art/hd/dinoRig");
+  const { SPECIES, SPECIES_IDS } = await import("../src/art/hd/species");
+
+  it("has all 12 species", () => expect(SPECIES_IDS).toHaveLength(12));
+
+  for (const id of SPECIES_IDS) {
+    it(`${id}: right size, not cut off at the edges, stands on the ground, walks`, () => {
+      const spec = SPECIES[id];
+      const a = drawDino(spec, 0);
+      expect([a.width, a.height]).toEqual([spec.width, spec.height]);
+      const solid = (x: number, y: number) => a.alpha(x, y) > 200;
+      for (let x = 0; x < a.width; x++) expect(solid(x, 0), `${id} top edge x=${x}`).toBe(false);
+      for (let y = 0; y < a.height; y++) {
+        expect(solid(0, y), `${id} left edge y=${y}`).toBe(false);
+        expect(solid(a.width - 1, y), `${id} right edge y=${y}`).toBe(false);
+      }
+      const feet = Array.from({ length: a.width }, (_, x) => x).some((x) => solid(x, spec.groundY - 1));
+      expect(feet, `${id} feet on groundY`).toBe(true);
+      expect(Array.from(drawDino(spec, 1).data)).not.toEqual(Array.from(a.data));
+    });
+  }
+});
