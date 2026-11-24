@@ -1,6 +1,6 @@
 import type { Player } from "@primal/server/schema";
 import { dayChip, dayPhase } from "../render/dayNight";
-import { STAT_ICONS } from "../art/ninjaAtlas";
+import { STAT_ICONS } from "../art/textures";
 import { el, uiRoot } from "./dom";
 import { iconElement } from "./icons";
 

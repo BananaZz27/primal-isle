@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { TILE_SIZE } from "@primal/shared";
-import { TEX } from "../art/ninjaAtlas";
+import { TEX } from "../art/textures";
 import { glowAlpha, nightAlpha } from "./dayNight";
 
 /** รัศมีวงแสงกองไฟ (px ในโลก) ≈ 2.5 ช่อง */

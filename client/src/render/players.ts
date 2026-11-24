@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { Callbacks } from "@colyseus/sdk";
 import type { Player } from "@primal/server/schema";
-import { TEX } from "../art/ninjaAtlas";
+import { TEX } from "../art/textures";
 import { survivorIdOf } from "../art/hd/survivor";
 import { HD_SCALE } from "../display";
 import { PLAYER_NAME_Y } from "./labelLayout";

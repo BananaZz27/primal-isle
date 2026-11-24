@@ -2,7 +2,7 @@ import Phaser from "phaser";
 import { Callbacks } from "@colyseus/sdk";
 import { dinoDef, isDinoKind } from "@primal/shared";
 import type { Dino } from "@primal/server/schema";
-import { TEX } from "../art/ninjaAtlas";
+import { TEX } from "../art/textures";
 import { textResolution } from "../display";
 import { tamedTagY } from "./labelLayout";
 import { dinoFeetY, dinoTopY, hasHdArt } from "./dinoLayout";

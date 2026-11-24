@@ -3,7 +3,7 @@ import { HD_SCALE, textResolution } from "../display";
 import { Callbacks } from "@colyseus/sdk";
 import { DecorKind, nodeDef, TILE_SIZE, type Decor } from "@primal/shared";
 import type { NodeState } from "@primal/server/schema";
-import { TEX } from "../art/ninjaAtlas";
+import { TEX } from "../art/textures";
 import type { WorldRoom } from "../net/connection";
 import { itemLabel } from "../ui/labels";
 import { nodeChange } from "./nodeChange";

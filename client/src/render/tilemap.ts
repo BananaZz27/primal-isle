@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { DecorKind, TILE_SIZE, type Decor, type WorldMap } from "@primal/shared";
 import { dualFrames, FLOWER_FRAME } from "../art/hd/ground";
-import { TEX } from "../art/ninjaAtlas";
+import { TEX } from "../art/textures";
 import { HD_SCALE } from "../display";
 
 /** ช่องของแผ่นภาพพื้น HD (texel) */

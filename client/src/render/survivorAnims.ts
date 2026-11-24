@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { TEX } from "../art/ninjaAtlas";
+import { TEX } from "../art/textures";
 import { OUTFITS, survivorIdOf } from "../art/hd/survivor";
 import { walkFrames, type Facing } from "./facing";
 

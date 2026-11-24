@@ -2,7 +2,7 @@ import Phaser from "phaser";
 import { Callbacks } from "@colyseus/sdk";
 import { TILE_SIZE } from "@primal/shared";
 import type { Crate } from "@primal/server/schema";
-import { TEX } from "../art/ninjaAtlas";
+import { TEX } from "../art/textures";
 import { HD_SCALE } from "../display";
 import type { OnTile } from "../input/interact";
 import type { WorldRoom } from "../net/connection";

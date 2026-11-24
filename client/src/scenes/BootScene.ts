@@ -1,10 +1,7 @@
 import Phaser from "phaser";
-import { DINO_KINDS, TILE_SIZE } from "@primal/shared";
-import { ASSET_ROOT, TEX, TREE_RECTS } from "../art/ninjaAtlas";
-import { CAMPFIRE_FRAMES, CAMPFIRE_PALETTE } from "../art/campfire";
-import { BAG, BED, BUILD_PALETTE, CHEST, DOOR, WALL } from "../art/structures";
-import { CRATE, LIVING_PALETTE } from "../art/living";
-import { paintHdFrames, paintHdSheet, paintTexture } from "../art/paint";
+import { DINO_KINDS } from "@primal/shared";
+import { TEX } from "../art/textures";
+import { paintHdFrames, paintHdSheet } from "../art/paint";
 import { OUTFITS, survivorIdOf, survivorSheet } from "../art/hd/survivor";
 import { drawDino } from "../art/hd/dinoRig";
 import { bag, bed, campfire, chest, crate, door, wall } from "../art/hd/built";
@@ -16,38 +13,17 @@ import { dinoWalkAnim } from "../render/dinos";
 import { CAMPFIRE_ANIM } from "../render/structures";
 import { registerSurvivorAnims } from "../render/survivorAnims";
 import { GLOW_RADIUS, paintGlow } from "../render/night";
-import { showLoadError } from "../ui/loadError";
 
-/** ฉากแรก: โหลดภาพทั้งหมด เตรียม frame ต้นไม้และท่าเดิน แล้วไปหน้าเมนู */
+/**
+ * ฉากแรก: วาดภาพทั้งเกมด้วยโค้ด (art/hd → texture) สร้าง animation แล้วไปหน้าเมนู
+ * ไม่มีไฟล์ภาพให้โหลดแล้ว — ภาพทุกชิ้นมาจาก art/hd
+ */
 export class BootScene extends Phaser.Scene {
-  /** ไฟล์ที่โหลดไม่สำเร็จ — ถ้ามี จะไม่เข้าเกม (ไม่งั้นเกมค้างเงียบๆ ตอนสร้างแผนที่) */
-  private failed: string[] = [];
-
   constructor() {
     super("Boot");
   }
 
-  preload() {
-    this.failed = [];
-    this.load.on(Phaser.Loader.Events.FILE_LOAD_ERROR, (file: Phaser.Loader.File) => this.failed.push(file.key));
-
-    const frame = { frameWidth: TILE_SIZE, frameHeight: TILE_SIZE };
-    this.load.spritesheet(TEX.tiles, `${ASSET_ROOT}/tileset.png`, frame);
-    this.load.image(TEX.tilesImage, `${ASSET_ROOT}/tileset.png`);
-  }
-
   create() {
-    if (this.failed.length > 0) {
-      console.error("asset load failed:", this.failed);
-      showLoadError();
-      return;
-    }
-
-    // ตัดต้นไม้ (ใหญ่กว่า 1 ช่อง) ออกมาเป็น frame ของตัวเอง
-    const sheet = this.textures.get(TEX.tilesImage);
-    TREE_RECTS.forEach((r, i) => sheet.add(TEX.tree(i), 0, r.x, r.y, r.w, r.h));
-
-
     // สิ่งก่อสร้าง ถุงของ ลังเสบียง HD
     paintHdFrames(this, TEX.structure("wall"), [wall()]);
     paintHdFrames(this, TEX.structure("door"), [door()]);
