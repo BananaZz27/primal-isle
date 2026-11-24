@@ -66,6 +66,11 @@ const KIND_TO_NODE: Partial<Record<DecorKind, keyof typeof BALANCE.nodes>> = {
 };
 
 /** ของตกแต่งชนิดนี้เก็บได้ไหม ได้อะไร — ดอกไม้คืน null */
+/** ชื่อทรัพยากรใน balance.json (tree/rock/bush/tuft) ของของตกแต่งชนิดนี้ — เก็บไม่ได้คืน null */
+export function nodeKey(kind: DecorKind): keyof typeof BALANCE.nodes | null {
+  return KIND_TO_NODE[kind] ?? null;
+}
+
 export function nodeDef(kind: DecorKind): NodeDef | null {
   const key = KIND_TO_NODE[kind];
   return key ? (BALANCE.nodes[key] as NodeDef) : null;

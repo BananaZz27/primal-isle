@@ -3,7 +3,9 @@ import { generateDecor, generateWorld, solidFromNodes, TILE_SIZE } from "@primal
 import type { Player } from "@primal/server/schema";
 import { CAMERA_ZOOM } from "../config";
 import { combineInputs } from "../input/combine";
-import { InteractControls, pickTarget } from "../input/interact";
+import { InteractControls, pickTarget, type PickWorld, type Target } from "../input/interact";
+import { TargetLabelView } from "../render/targetLabel";
+import { describeTarget } from "../ui/targetLabel";
 import { KeyboardInput } from "../input/keyboard";
 import { TouchJoystick } from "../input/touchJoystick";
 import type { WorldRoom } from "../net/connection";
@@ -55,6 +57,11 @@ export class WorldScene extends Phaser.Scene {
   /** กล่องเสบียงที่เพิ่งกดเปิด + ของในกระเป๋าก่อนเปิด (ไว้บอกว่าได้อะไร) */
   private pendingLoot: { key: string; before: Record<string, number>; at: number } | null = null;
   private hudTimer = 0;
+  /** สิ่งรอบตัวผู้เล่น สำหรับเลือกเป้า (ตั้งใน create) */
+  private surroundings!: (me: Player) => Required<PickWorld>;
+  private targetLabel!: TargetLabelView;
+  /** เป้าที่ ✋ จะทำ (คำนวณทุก 200ms — ไล่ดูของตกแต่งทั้งเกาะ ทุกเฟรมจะหนัก) */
+  private aimed: Target = null;
   private connected = true;
 
   constructor() {
@@ -98,7 +105,20 @@ export class WorldScene extends Phaser.Scene {
     if (self) cam.startFollow(self, true, 0.2, 0.2);
 
     // โต้ตอบ: หาสิ่งที่ใกล้ที่สุดจากตำแหน่งที่เห็นบนจอ แล้วขอเซิร์ฟเวอร์ (เซิร์ฟเวอร์ตรวจซ้ำเสมอ)
+    // ปุ่ม ✋ กับป้ายชื่อเป้าใช้ "สิ่งรอบตัว" ชุดเดียวกัน → ป้ายบอกตรงกับสิ่งที่ปุ่มจะทำเสมอ
     const isDepleted = (id: number) => this.room.state.nodes.get(String(id))?.hp === 0;
+    this.surroundings = (me) => ({
+      decor,
+      map,
+      isDepleted,
+      campfires: structures.campfires(),
+      canCook: (me.inventory.get("berry") ?? 0) > 0 || (me.inventory.get("meat") ?? 0) > 0,
+      drops: structures.bagList(),
+      crates: this.crates.list(),
+      dinos: this.dinoView.list(),
+      chests: structures.chests(),
+    });
+    this.targetLabel = new TargetLabelView(this);
     const myPos = () => {
       const me = this.room.state.players.get(this.room.sessionId);
       return me ? this.prediction.pos(me) : null;
@@ -107,18 +127,7 @@ export class WorldScene extends Phaser.Scene {
       const me = this.room.state.players.get(this.room.sessionId);
       if (!me || !this.connected) return;
       const { x, y } = this.prediction.pos(me);
-      const canCook = (me.inventory.get("berry") ?? 0) > 0 || (me.inventory.get("meat") ?? 0) > 0;
-      const target = pickTarget(x, y, {
-        decor,
-        map,
-        isDepleted,
-        campfires: structures.campfires(),
-        canCook,
-        drops: structures.bagList(),
-        crates: this.crates.list(),
-        dinos: this.dinoView.list(),
-        chests: structures.chests(),
-      });
+      const target = pickTarget(x, y, this.surroundings(me));
       if (target?.kind === "drop") this.room.send("pickup", { key: target.key });
       else if (target?.kind === "crate") {
         this.pendingLoot = { key: target.key, before: Object.fromEntries(me.inventory.entries()), at: performance.now() };
@@ -179,6 +188,7 @@ export class WorldScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       structures.destroy();
       this.crates.destroy();
+      this.targetLabel.destroy();
       this.night.destroy();
       this.crateArrow.destroy();
       this.chestPanel.destroy();
@@ -261,6 +271,7 @@ export class WorldScene extends Phaser.Scene {
     this.interact.update(now);
     this.night.update(now, this.room.state.clock);
     this.updateCrateArrow();
+    this.updateTargetLabel();
 
     // HUD เป็น HTML อัปเดตทุก 200ms พอ ไม่ต้องทุกเฟรม
     if (now - this.hudTimer > 200) {
@@ -273,10 +284,18 @@ export class WorldScene extends Phaser.Scene {
         const pos = this.prediction.pos(me);
         this.feedButton.hidden = !feedTarget(pos.x, pos.y, this.dinoView.list(), (i) => me.inventory.get(i) ?? 0);
         this.updateChestPanel(me, pos);
+        this.aimed = pickTarget(pos.x, pos.y, this.surroundings(me));
         this.reportLoot(me, now);
       }
       this.statsHud.updateClock(this.room.state.clock);
     }
+  }
+
+  /** ป้ายชื่อเหนือเป้า — ตำแหน่งอัปเดตทุกเฟรม (ไดโนเดิน / ป้ายน้ำตามตัวเรา) */
+  private updateTargetLabel() {
+    const me = this.room.state.players.get(this.room.sessionId);
+    if (!me || !this.aimed) return this.targetLabel.show(null);
+    this.targetLabel.show(describeTarget(this.aimed, this.surroundings(me), this.prediction.pos(me)));
   }
 
   /** ลูกศรขอบจอ → กล่องเสบียงที่ใกล้ที่สุด (ซ่อนเมื่อกล่องอยู่ในจอ) */
