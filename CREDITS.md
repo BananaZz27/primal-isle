@@ -4,15 +4,12 @@
 
 ## ภาพ (Graphics)
 
-| ไฟล์ | ผู้สร้าง | ที่มา | License |
-|---|---|---|---|
-| `client/public/assets/ninja-adventure/tileset.png` | [Pixel-boy](https://twitter.com/2pblog1) (Ninja Adventure) | [sparklinlabs/superpowers-asset-packs](https://github.com/sparklinlabs/superpowers-asset-packs) → `ninja-adventure/background-elements/tileset.png` | CC0 1.0 — **แก้ไข:** เติมแถวล่าง 1 แถว ช่องแรกเป็นทรายสีเรียบ |
-| `client/public/assets/ninja-adventure/characters/{3,6,9,12,13,14,17,25}.png` | Pixel-boy (Ninja Adventure) | repo เดียวกัน → `ninja-adventure/characters/` | CC0 1.0 (ไม่แก้ไข) |
+**ไม่มีไฟล์ภาพจากภายนอกแล้ว** (ตั้งแต่ขั้นที่ 8) — ภาพทุกชิ้นในเกม Claude วาดด้วยโค้ด อยู่ภายใต้ license ของโค้ด:
+พื้น/ชายฝั่ง (`client/src/art/hd/ground.ts`), ต้นไม้ หิน พุ่มไม้ หญ้า (`hd/nature.ts`), ไดโน 12 ชนิด (`hd/dinoRig.ts` + `hd/species.ts`),
+ตัวละคร 8 แบบ (`hd/survivor.ts`), สิ่งก่อสร้าง กองไฟ ถุงของ ลังเสบียง (`hd/built.ts`), ไอคอน (`hd/icons.ts`)
 
-| `client/public/assets/ninja-adventure/items/{axe,beaf,hammer,heart,tea-leaf,water-pot,yakitori}.png` | Pixel-boy (Ninja Adventure) | repo เดียวกัน → `ninja-adventure/items/` และ `items/food/` | CC0 1.0 (ไม่แก้ไข) |
-| `client/public/assets/ninja-adventure/items/lance.png` (ไอคอนหอก) | Pixel-boy (Ninja Adventure) | repo เดียวกัน → `ninja-adventure/weapons/lance.png` | CC0 1.0 (ไม่แก้ไข) |
-
-**ภาพที่ Claude วาดเองด้วยตัวอักษรในโค้ด** (ไม่มีไฟล์ภาพ, อยู่ภายใต้ license ของโค้ด): กองไฟ (`client/src/art/campfire.ts`), กำแพง/ประตู/ที่นอน/ถุงของ (`client/src/art/structures.ts`), ไดโนเสาร์ 4 ชนิดและเนื้อดิบ (`client/src/art/dinos.ts`)
+ก่อนหน้านี้ (ขั้นที่ 1–7) ใช้ภาพของ [Pixel-boy](https://twitter.com/2pblog1) ชุด Ninja Adventure (CC0 1.0) จาก
+[sparklinlabs/superpowers-asset-packs](https://github.com/sparklinlabs/superpowers-asset-packs) — ขอบคุณที่ทำให้เกมเริ่มต้นได้เร็ว
 
 ## เสียง (Audio)
 

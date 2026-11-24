@@ -1,8 +1,9 @@
 import Phaser from "phaser";
+import { HD_SCALE, textResolution } from "../display";
 import { Callbacks } from "@colyseus/sdk";
 import { DecorKind, nodeDef, TILE_SIZE, type Decor } from "@primal/shared";
 import type { NodeState } from "@primal/server/schema";
-import { BUSH_FRAME, GROUND_DECOR, STUMP_FRAME, TEX, TREE_RECTS } from "../art/ninjaAtlas";
+import { TEX } from "../art/textures";
 import type { WorldRoom } from "../net/connection";
 import { itemLabel } from "../ui/labels";
 import { nodeChange } from "./nodeChange";
@@ -54,18 +55,24 @@ export class ResourceView {
   private createImage(d: Decor): Phaser.GameObjects.Image {
     const x = d.tx * TILE_SIZE + TILE_SIZE / 2;
     const baseY = (d.ty + 1) * TILE_SIZE; // โคน = ขอบล่างของช่อง
-    const image =
-      d.kind === DecorKind.Tree
-        ? this.scene.add.image(x, baseY, TEX.tilesImage, TEX.tree(d.variant % TREE_RECTS.length))
-        : this.scene.add.image(x, baseY, TEX.tiles, this.fullFrame(d));
+    // ภาพ HD วาดโคนที่ขอบล่าง (เงาเลยลงมานิดหน่อยเหมือนภาพเดิม)
+    const image = this.scene.add.image(x, baseY + 2, this.fullTexture(d)).setScale(HD_SCALE);
     // เรียงลึกตามโคน: ผู้เล่นที่อยู่ "หลัง" จะถูกบัง
     return image.setOrigin(0.5, 1).setDepth(baseY);
   }
 
-  private fullFrame(d: Decor): number {
-    if (d.kind === DecorKind.Bush) return BUSH_FRAME;
-    const frames = d.kind === DecorKind.Pebble ? GROUND_DECOR.pebble : GROUND_DECOR.tuft;
-    return frames[d.variant % frames.length];
+  /** ภาพตอนยังเก็บได้ */
+  private fullTexture(d: Decor): string {
+    switch (d.kind) {
+      case DecorKind.Tree:
+        return TEX.hd.tree(d.variant);
+      case DecorKind.Bush:
+        return TEX.hd.bush(true);
+      case DecorKind.Pebble:
+        return TEX.hd.rock(d.variant);
+      default:
+        return TEX.hd.tuft;
+    }
   }
 
   private setHp(id: number, hp: number | null) {
@@ -81,11 +88,10 @@ export class ResourceView {
     const { image, decor } = view;
     switch (decor.kind) {
       case DecorKind.Tree:
-        if (depleted) image.setTexture(TEX.tiles, STUMP_FRAME);
-        else image.setTexture(TEX.tilesImage, TEX.tree(decor.variant % TREE_RECTS.length));
+        image.setTexture(depleted ? TEX.hd.stump : TEX.hd.tree(decor.variant));
         break;
       case DecorKind.Bush:
-        image.setAlpha(depleted ? 0.45 : 1);
+        image.setTexture(TEX.hd.bush(!depleted)); // เก็บหมด = พุ่มไม่มีผล
         break;
       default:
         image.setVisible(!depleted);
@@ -107,7 +113,7 @@ export class ResourceView {
         strokeThickness: 2,
       })
       .setOrigin(0.5, 1)
-      .setResolution(6)
+      .setResolution(textResolution())
       .setDepth(100000);
     this.scene.tweens.add({ targets: text, y: text.y - 10, alpha: 0, duration: 800, onComplete: () => text.destroy() });
   }

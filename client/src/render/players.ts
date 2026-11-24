@@ -1,12 +1,14 @@
 import Phaser from "phaser";
 import { Callbacks } from "@colyseus/sdk";
 import type { Player } from "@primal/server/schema";
-import { SURVIVOR_IDS, TEX } from "../art/ninjaAtlas";
+import { TEX } from "../art/textures";
+import { survivorIdOf } from "../art/hd/survivor";
+import { HD_SCALE } from "../display";
 import { PLAYER_NAME_Y } from "./labelLayout";
-import { CAMERA_ZOOM } from "../config";
+import { textResolution } from "../display";
 import type { WorldRoom } from "../net/connection";
 import { facingFrom, walkFrames, type Facing } from "./facing";
-import { walkAnimKey } from "./survivorAnims";
+import { ensureSurvivor, walkAnimKey } from "./survivorAnims";
 
 interface PlayerView {
   player: Player;
@@ -78,9 +80,10 @@ export class PlayerSprites {
   }
 
   private add(sessionId: string, player: Player, isSelf: boolean) {
-    const survivorId = SURVIVOR_IDS[player.colorIndex % SURVIVOR_IDS.length];
+    const survivorId = survivorIdOf(player.colorIndex);
+    ensureSurvivor(this.scene, survivorId);
     // จุดอ้างอิง = กลางลำตัว (ตรงกับกล่องชนของ stepPlayer), เท้าอยู่ต่ำลงมา
-    const sprite = this.scene.add.sprite(0, 0, TEX.survivor(survivorId), walkFrames("down")[0]).setOrigin(0.5, 0.75);
+    const sprite = this.scene.add.sprite(0, 0, TEX.survivor(survivorId), walkFrames("down")[0]).setOrigin(0.5, 0.75).setScale(HD_SCALE);
 
     const label = this.scene.add
       .text(0, PLAYER_NAME_Y, player.name, {
@@ -91,7 +94,7 @@ export class PlayerSprites {
         strokeThickness: 2,
       })
       .setOrigin(0.5, 1)
-      .setResolution(CAMERA_ZOOM * 2); // ให้ตัวหนังสือคมแม้กล้องซูม
+      .setResolution(textResolution()); // ให้ตัวหนังสือคมแม้กล้องซูม
 
     const container = this.scene.add.container(player.x, player.y, [sprite, label]);
     this.views.set(sessionId, {

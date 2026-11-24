@@ -54,7 +54,7 @@ export const NODE_LABELS: Record<string, string> = {
 /** ชื่อไดโนแต่ละชนิด */
 export const DINO_LABELS: Record<string, string> = {
   compy: "ไดโนจิ๋ว",
-  duckbill: "ปากเป็ด",
-  raptor: "แร็พเตอร์",
+  duckbill: "พาราซอโรโลฟัส",
+  raptor: "ยูทาห์แร็พเตอร์",
   trike: "ไทรเซอราทอปส์",
 };

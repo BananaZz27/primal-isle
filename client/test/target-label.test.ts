@@ -40,7 +40,7 @@ describe("label over what ✋ will act on", () => {
     expect(describeTarget({ kind: "crate", key: "c" }, world, me)).toMatchObject({ text: "📦 กล่องเสบียง → เปิด", x: 3 * T + 8 });
     expect(describeTarget({ kind: "chest", key: "s" }, world, me)).toMatchObject({ text: "กล่องเก็บของ → เปิด", x: 8 * T + 8 });
     const dino = describeTarget({ kind: "dino", key: "d" }, world, me)!;
-    expect(dino.text).toBe("แร็พเตอร์ → ตี");
+    expect(dino.text).toBe("ยูทาห์แร็พเตอร์ → ตี");
     expect([dino.x, dino.y < 120]).toEqual([100, true]);
     expect(describeTarget({ kind: "campfire" }, world, me)?.text).toBe("🔥 กองไฟ → ย่าง");
     const water = describeTarget({ kind: "water" }, world, me)!;

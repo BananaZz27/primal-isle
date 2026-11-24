@@ -2,9 +2,12 @@ import Phaser from "phaser";
 import { Callbacks } from "@colyseus/sdk";
 import { dinoDef, isDinoKind } from "@primal/shared";
 import type { Dino } from "@primal/server/schema";
-import { TEX } from "../art/ninjaAtlas";
-import { CAMERA_ZOOM } from "../config";
+import { TEX } from "../art/textures";
+import { textResolution } from "../display";
 import { tamedTagY } from "./labelLayout";
+import { dinoFeetY, dinoTopY, hasHdArt } from "./dinoLayout";
+import { SPECIES } from "../art/hd/species";
+import { HD_SCALE } from "../display";
 import type { DinoOnScreen } from "../input/feed";
 import type { WorldRoom } from "../net/connection";
 
@@ -85,10 +88,18 @@ export class DinoView {
   }
 
   private add(key: string, dino: Dino) {
-    if (!isDinoKind(dino.kind)) return;
+    if (!isDinoKind(dino.kind) || !hasHdArt(dino.kind)) {
+      // ชนิดใหม่ในเซิร์ฟเวอร์แต่ยังไม่มีภาพ → ไม่วาด (แต่ยังกัดได้!) ต้องเพิ่มใน art/hd/species.ts
+      console.error(`no HD art for dino kind "${dino.kind}"`);
+      return;
+    }
     const half = dinoDef(dino.kind).half;
-    // จุดอ้างอิง = กลางกล่องชน; เท้าอยู่ต่ำกว่าเล็กน้อย
-    const sprite = this.scene.add.sprite(0, 0, TEX.dino(dino.kind), 0).setOrigin(0.5, 0.65);
+    // จุดอ้างอิง = กลางกล่องชน · ภาพ HD วางให้เท้าอยู่ที่ dinoFeetY แล้วย่อ HD_SCALE
+    const spec = SPECIES[dino.kind as keyof typeof SPECIES];
+    const sprite = this.scene.add
+      .sprite(0, dinoFeetY(dino.kind), TEX.dino(dino.kind), 0)
+      .setOrigin(0.5, spec.groundY / spec.height)
+      .setScale(HD_SCALE);
     const bar = this.scene.add.graphics();
     const tag = this.scene.add
       .text(0, tamedTagY(half), "", {
@@ -99,7 +110,7 @@ export class DinoView {
         strokeThickness: 2,
       })
       .setOrigin(0.5, 0)
-      .setResolution(CAMERA_ZOOM * 2);
+      .setResolution(textResolution());
     const container = this.scene.add.container(dino.x, dino.y, [sprite, bar, tag]);
     this.views.set(key, {
       dino,
@@ -122,7 +133,7 @@ export class DinoView {
     const def = dinoDef(v.dino.kind);
     if (v.dino.hp >= def.hp) return;
     const w = Math.max(10, def.half * 2);
-    const top = -def.half - 6;
+    const top = dinoTopY(v.dino.kind) - 4; // เหนือหัว/หลังของภาพ
     v.bar.fillStyle(0x000000, 0.6).fillRect(-w / 2 - 1, top - 1, w + 2, 4);
     v.bar.fillStyle(v.dino.owner ? 0x6ad06a : 0xe04848).fillRect(-w / 2, top, (w * v.dino.hp) / def.hp, 2);
   }

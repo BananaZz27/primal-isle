@@ -1,28 +1,15 @@
 import { describe, it, expect } from "vitest";
 import { DecorKind, DINO_KINDS, TILE_SIZE, Tile, type WorldMap } from "@primal/shared";
-import { DINO_FRAMES, DINO_PALETTE, MEAT_ICON } from "../src/art/dinos";
-import { parsePixelArt } from "../src/art/pixels";
 import { pickTarget } from "../src/input/interact";
 import { feedTarget } from "../src/input/feed";
-import { ITEM_ICONS } from "../src/art/ninjaAtlas";
+import { ITEM_ICONS } from "../src/art/textures";
 import { itemLabel, recipeLabel, RECIPE_HINTS } from "../src/ui/labels";
 
 const map: WorldMap = { seed: 0, size: 12, tiles: new Uint8Array(144).fill(Tile.Grass) };
 const P = { x: 5 * TILE_SIZE + 8, y: 5 * TILE_SIZE + 8 };
 const dino = (key: string, kind: string, dx: number, owner = "") => ({ key, kind, x: P.x + dx, y: P.y, owner });
 
-describe("dino art", () => {
-  it("every kind has 2 frames of the same size that parse", () => {
-    for (const kind of DINO_KINDS) {
-      const frames = DINO_FRAMES[kind];
-      expect(frames.length).toBe(2);
-      const arts = frames.map((f) => parsePixelArt(f, DINO_PALETTE));
-      expect(arts[1].width).toBe(arts[0].width);
-      expect(arts[1].height).toBe(arts[0].height);
-    }
-    expect(parsePixelArt(MEAT_ICON, DINO_PALETTE).width).toBe(16);
-  });
-
+describe("dino items", () => {
   it("new items have icons and Thai names", () => {
     for (const id of ["meat", "steak", "spear"] as const) {
       expect(ITEM_ICONS[id]).toBeDefined();

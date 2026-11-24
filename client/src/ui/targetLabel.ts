@@ -1,4 +1,5 @@
-import { DecorKind, nodeDef, nodeKey, TILE_SIZE, type Decor } from "@primal/shared";
+import { DecorKind, isDinoKind, nodeDef, nodeKey, TILE_SIZE, type Decor } from "@primal/shared";
+import { dinoTopY } from "../render/dinoLayout";
 import type { DinoOnScreen } from "../input/feed";
 import type { OnTile, Target } from "../input/interact";
 import { PLAYER_NAME_Y } from "../render/labelLayout";
@@ -80,8 +81,9 @@ function placeTarget(target: Target, w: LabelWorld, me: { x: number; y: number }
     }
     case "dino": {
       const d = w.dinos.find((x) => x.key === target.key);
-      // เหนือหลอดเลือดของไดโน (หลอดเลือดอยู่สูงกว่าตัวราว 1 ช่อง)
-      return d ? { text: `${DINO_LABELS[d.kind] ?? d.kind} → ตี`, x: d.x, y: d.y - TILE_SIZE - GAP } : null;
+      // เหนือหลอดเลือด (หลอดเลือดอยู่เหนือขอบบนของภาพ)
+      const top = d && isDinoKind(d.kind) ? dinoTopY(d.kind) - 6 : -TILE_SIZE;
+      return d ? { text: `${DINO_LABELS[d.kind] ?? d.kind} → ตี`, x: d.x, y: d.y + top - GAP } : null;
     }
     case "campfire": {
       const fire = nearest(me, w.campfires);

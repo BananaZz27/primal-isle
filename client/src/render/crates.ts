@@ -2,7 +2,8 @@ import Phaser from "phaser";
 import { Callbacks } from "@colyseus/sdk";
 import { TILE_SIZE } from "@primal/shared";
 import type { Crate } from "@primal/server/schema";
-import { TEX } from "../art/ninjaAtlas";
+import { TEX } from "../art/textures";
+import { HD_SCALE } from "../display";
 import type { OnTile } from "../input/interact";
 import type { WorldRoom } from "../net/connection";
 
@@ -48,7 +49,7 @@ export class CrateView {
   private add(key: string, c: Crate) {
     if (this.images.has(key)) return;
     const baseY = (c.ty + 1) * TILE_SIZE;
-    const img = this.scene.add.image(c.tx * TILE_SIZE + TILE_SIZE / 2, baseY, TEX.crate).setOrigin(0.5, 1).setDepth(baseY);
+    const img = this.scene.add.image(c.tx * TILE_SIZE + TILE_SIZE / 2, baseY, TEX.crate).setOrigin(0.5, 1).setScale(HD_SCALE).setDepth(baseY);
     // ร่มชูชีพแกว่งเบาๆ ให้สังเกตเห็นง่าย
     this.scene.tweens.add({ targets: img, angle: { from: -3, to: 3 }, duration: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
     this.images.set(key, img);

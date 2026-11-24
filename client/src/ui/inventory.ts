@@ -1,6 +1,6 @@
 import { isConsumable, isStructureKind, ITEM_IDS, type ItemId } from "@primal/shared";
 import type { Player } from "@primal/server/schema";
-import { ITEM_ICONS } from "../art/ninjaAtlas";
+import { ITEM_ICONS } from "../art/textures";
 import { el, uiRoot } from "./dom";
 import { iconElement } from "./icons";
 import { itemLabel } from "./labels";
