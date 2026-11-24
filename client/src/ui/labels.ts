@@ -42,3 +42,19 @@ export const RECIPE_HINTS: Record<RecipeId, string> = {
   spear: "ตีไดโนแรงขึ้น (12 ต่อครั้ง)",
   chest: `เก็บของได้ ${BALANCE.chestKinds} ชนิด ทุกคนในโลกใช้ร่วมกัน`,
 };
+
+/** ชื่อทรัพยากรบนแผนที่ (ตามชื่อใน balance.json → nodes) */
+export const NODE_LABELS: Record<string, string> = {
+  tree: "ต้นไม้",
+  rock: "ก้อนหิน",
+  bush: "พุ่มผลไม้",
+  tuft: "กอหญ้า",
+};
+
+/** ชื่อไดโนแต่ละชนิด */
+export const DINO_LABELS: Record<string, string> = {
+  compy: "ไดโนจิ๋ว",
+  duckbill: "ปากเป็ด",
+  raptor: "แร็พเตอร์",
+  trike: "ไทรเซอราทอปส์",
+};
