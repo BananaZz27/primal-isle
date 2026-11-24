@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { parsePixelArt } from "./pixels";
+import type { PixelCanvas } from "./hd/canvas";
 
 /**
  * วาดภาพพิกเซลลงเป็น texture ของ Phaser ชื่อ `key`
@@ -27,5 +28,20 @@ export function paintTexture(
     });
   });
 
+  texture.refresh();
+}
+
+/**
+ * วาดภาพ HD (RGBA จากชุดเครื่องมือ art/hd) เป็น texture ชื่อ `key` — หลายภาพเรียงแนวนอน เป็นเฟรม 0, 1, …
+ * (ภาพ HD ทุกภาพต้องแสดงที่ scale HD_SCALE)
+ */
+export function paintHdFrames(scene: Phaser.Scene, key: string, frames: PixelCanvas[]): void {
+  const { width: w, height: h } = frames[0];
+  const texture = scene.textures.createCanvas(key, w * frames.length, h);
+  if (!texture) throw new Error(`cannot create texture "${key}"`);
+  frames.forEach((f, i) => {
+    texture.context.putImageData(new ImageData(new Uint8ClampedArray(f.data), w, h), i * w, 0);
+    texture.add(i, 0, i * w, 0, w, h);
+  });
   texture.refresh();
 }
