@@ -7,7 +7,6 @@ import {
   GROUND_DECOR,
   SAND_RIM,
   SHORE,
-  SURVIVOR_IDS,
   TILESET_COLS,
   TILESET_ROWS,
   TREE_RECTS,
@@ -51,17 +50,9 @@ describe("ninja atlas", () => {
     }
   });
 
-  it("has 8 distinct survivor sheets that exist on disk", () => {
-    expect(SURVIVOR_IDS.length).toBe(8);
-    expect(new Set(SURVIVOR_IDS).size).toBe(8);
-    for (const id of SURVIVOR_IDS) expect(existsSync(assets(`characters/${id}.png`))).toBe(true);
-  });
 
   it("the tileset file exists", () => expect(existsSync(assets("tileset.png"))).toBe(true));
 
-  it("every survivor sheet is the full 64x112 layout (4 directions × 7 rows)", () => {
-    for (const id of SURVIVOR_IDS) expect(pngSize(assets(`characters/${id}.png`)), id).toEqual({ w: 64, h: 112 });
-  });
 
   it("the tileset is 448 wide and TILESET_ROWS tall", () =>
     expect(pngSize(assets("tileset.png"))).toEqual({ w: 448, h: TILESET_ROWS * 16 }));

@@ -71,9 +71,6 @@ export const TREE_RECTS = [
   { x: 96, y: 160, w: 32, h: 32 },
 ];
 
-/** ไฟล์ตัวละครที่ดูเป็นคนธรรมดา/นักสำรวจ ใช้ตาม colorIndex ของผู้เล่น */
-export const SURVIVOR_IDS = ["14", "3", "17", "6", "9", "12", "13", "25"] as const;
-
 /** ชื่อ texture ใน Phaser */
 export const TEX = {
   tiles: "ninja-tiles", // spritesheet 16×16 ใช้กับ tilemap

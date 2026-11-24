@@ -1,10 +1,11 @@
 import Phaser from "phaser";
 import { DINO_KINDS, TILE_SIZE } from "@primal/shared";
-import { ASSET_ROOT, SURVIVOR_IDS, TEX, TREE_RECTS } from "../art/ninjaAtlas";
+import { ASSET_ROOT, TEX, TREE_RECTS } from "../art/ninjaAtlas";
 import { CAMPFIRE_FRAMES, CAMPFIRE_PALETTE } from "../art/campfire";
 import { BAG, BED, BUILD_PALETTE, CHEST, DOOR, WALL } from "../art/structures";
 import { CRATE, LIVING_PALETTE } from "../art/living";
-import { paintHdFrames, paintTexture } from "../art/paint";
+import { paintHdFrames, paintHdSheet, paintTexture } from "../art/paint";
+import { OUTFITS, survivorIdOf, survivorSheet } from "../art/hd/survivor";
 import { drawDino } from "../art/hd/dinoRig";
 import { groundTileset } from "../art/hd/ground";
 import { bush, pineTree, rock, stump, tree, tuft } from "../art/hd/nature";
@@ -32,9 +33,6 @@ export class BootScene extends Phaser.Scene {
     const frame = { frameWidth: TILE_SIZE, frameHeight: TILE_SIZE };
     this.load.spritesheet(TEX.tiles, `${ASSET_ROOT}/tileset.png`, frame);
     this.load.image(TEX.tilesImage, `${ASSET_ROOT}/tileset.png`);
-    for (const id of SURVIVOR_IDS) {
-      this.load.spritesheet(TEX.survivor(id), `${ASSET_ROOT}/characters/${id}.png`, frame);
-    }
   }
 
   create() {
@@ -48,7 +46,6 @@ export class BootScene extends Phaser.Scene {
     const sheet = this.textures.get(TEX.tilesImage);
     TREE_RECTS.forEach((r, i) => sheet.add(TEX.tree(i), 0, r.x, r.y, r.w, r.h));
 
-    registerSurvivorAnims(this);
 
     // กำแพง ประตู ที่นอน กล่องเก็บของ ถุงของ ลังเสบียง — วาดเอง
     paintTexture(this, TEX.structure("wall"), [WALL], BUILD_PALETTE);
@@ -67,6 +64,9 @@ export class BootScene extends Phaser.Scene {
     if (!this.anims.exists(CAMPFIRE_ANIM)) {
       this.anims.create({ key: CAMPFIRE_ANIM, frames: [{ key: TEX.campfire, frame: 0 }, { key: TEX.campfire, frame: 1 }], frameRate: 5, repeat: -1 });
     }
+    // ผู้รอดชีวิต HD 8 แบบ (4 ทิศ × 4 ท่าเดิน) — ต้องวาดก่อนสร้าง animation
+    OUTFITS.forEach((o, i) => paintHdSheet(this, TEX.survivor(survivorIdOf(i)), survivorSheet(o), 32, 32));
+    registerSurvivorAnims(this);
     // พื้น HD: น้ำ ทราย หญ้า ป่า (16 รูปขอบต่อชั้น) + ดอกไม้
     paintHdFrames(this, TEX.hd.ground, [groundTileset()]);
     // ทรัพยากร HD: ต้นไม้ 2 แบบ ตอ หิน 2 ขนาด พุ่มไม้มี/ไม่มีผล กอหญ้า

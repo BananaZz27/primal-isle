@@ -95,8 +95,11 @@ export class PixelCanvas {
     this.data.set([mix(r, this.data[i]), mix(g, this.data[i + 1]), mix(b, this.data[i + 2]), a * 255], i);
   }
 
-  /** ทรงรีลงเงาแบบทรงกลม (แสงซ้ายบน) — lift เลื่อนความสว่างทั้งก้อน (+ สว่างขึ้น / − มืดลง) */
-  sphere(cx: number, cy: number, rx: number, ry: number, ramp: Ramp, lift = 0): void {
+  /**
+   * ทรงรีลงเงาแบบทรงกลม (แสงซ้ายบน) — lift เลื่อนความสว่างทั้งก้อน (+ สว่างขึ้น / − มืดลง)
+   * dither = false: ไล่สีเป็นขั้นเรียบ (ผิวหน้าคน — dither ดูเหมือนหนวด/รอยเปื้อน)
+   */
+  sphere(cx: number, cy: number, rx: number, ry: number, ramp: Ramp, lift = 0, dither = true): void {
     for (let y = Math.floor(cy - ry); y <= Math.ceil(cy + ry); y++) {
       for (let x = Math.floor(cx - rx); x <= Math.ceil(cx + rx); x++) {
         const nx = (x + 0.5 - cx) / rx;
@@ -105,7 +108,7 @@ export class PixelCanvas {
         if (d > 1) continue;
         const nz = Math.sqrt(1 - d);
         const lambert = nx * LIGHT[0] + ny * LIGHT[1] + nz * LIGHT[2];
-        this.set(x, y, rampAt(ramp, 0.15 + 0.85 * Math.max(0, lambert) + lift, x, y));
+        this.set(x, y, rampAt(ramp, 0.15 + 0.85 * Math.max(0, lambert) + lift, x, y, dither));
       }
     }
   }
