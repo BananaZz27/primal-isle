@@ -3,7 +3,7 @@ import { Callbacks } from "@colyseus/sdk";
 import type { Player } from "@primal/server/schema";
 import { SURVIVOR_IDS, TEX } from "../art/ninjaAtlas";
 import { PLAYER_NAME_Y } from "./labelLayout";
-import { CAMERA_ZOOM } from "../config";
+import { textResolution } from "../display";
 import type { WorldRoom } from "../net/connection";
 import { facingFrom, walkFrames, type Facing } from "./facing";
 import { walkAnimKey } from "./survivorAnims";
@@ -91,7 +91,7 @@ export class PlayerSprites {
         strokeThickness: 2,
       })
       .setOrigin(0.5, 1)
-      .setResolution(CAMERA_ZOOM * 2); // ให้ตัวหนังสือคมแม้กล้องซูม
+      .setResolution(textResolution()); // ให้ตัวหนังสือคมแม้กล้องซูม
 
     const container = this.scene.add.container(player.x, player.y, [sprite, label]);
     this.views.set(sessionId, {

@@ -3,7 +3,7 @@ import { Callbacks } from "@colyseus/sdk";
 import { dinoDef, isDinoKind } from "@primal/shared";
 import type { Dino } from "@primal/server/schema";
 import { TEX } from "../art/ninjaAtlas";
-import { CAMERA_ZOOM } from "../config";
+import { textResolution } from "../display";
 import { tamedTagY } from "./labelLayout";
 import type { DinoOnScreen } from "../input/feed";
 import type { WorldRoom } from "../net/connection";
@@ -99,7 +99,7 @@ export class DinoView {
         strokeThickness: 2,
       })
       .setOrigin(0.5, 0)
-      .setResolution(CAMERA_ZOOM * 2);
+      .setResolution(textResolution());
     const container = this.scene.add.container(dino.x, dino.y, [sprite, bar, tag]);
     this.views.set(key, {
       dino,

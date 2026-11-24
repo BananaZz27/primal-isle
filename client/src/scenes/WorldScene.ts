@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { generateDecor, generateWorld, solidFromNodes, TILE_SIZE } from "@primal/shared";
 import type { Player } from "@primal/server/schema";
-import { CAMERA_ZOOM } from "../config";
+import { cameraZoom, currentDpr, screenPx } from "../display";
 import { combineInputs } from "../input/combine";
 import { InteractControls, pickTarget, type PickWorld, type Target } from "../input/interact";
 import { TargetLabelView } from "../render/targetLabel";
@@ -93,7 +93,11 @@ export class WorldScene extends Phaser.Scene {
     const worldPx = map.size * TILE_SIZE;
     const cam = this.cameras.main;
     cam.setBounds(0, 0, worldPx, worldPx);
-    cam.setZoom(CAMERA_ZOOM);
+    cam.setZoom(cameraZoom(currentDpr()));
+    // หมุนจอ / ลากไปจอที่ความละเอียดต่างกัน → ซูมใหม่ให้เม็ดพิกเซลยังเป็นจำนวนเต็ม
+    const onResize = () => cam.setZoom(cameraZoom(currentDpr()));
+    this.scale.on("resize", onResize);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.scale.off("resize", onResize));
 
     this.players = new PlayerSprites(this, this.room);
     this.dinoView = new DinoView(this, this.room);
@@ -305,12 +309,14 @@ export class WorldScene extends Phaser.Scene {
     const crate = pos ? nearestCrate(pos.x, pos.y, this.crates.list()) : null;
     const cam = this.cameras.main;
     const view = cam.worldView;
+    const dpr = currentDpr();
     const target = crate && {
-      sx: ((crate.tx + 0.5) * TILE_SIZE - view.x) * cam.zoom,
-      sy: ((crate.ty + 0.5) * TILE_SIZE - view.y) * cam.zoom,
+      // พิกเซลของ canvas → CSS px (ลูกศรเป็น HTML)
+      sx: screenPx(((crate.tx + 0.5) * TILE_SIZE - view.x) * cam.zoom, dpr),
+      sy: screenPx(((crate.ty + 0.5) * TILE_SIZE - view.y) * cam.zoom, dpr),
       tiles: crate.tiles,
     };
-    this.crateArrow.update(target, this.scale.width, this.scale.height);
+    this.crateArrow.update(target, screenPx(this.scale.width, dpr), screenPx(this.scale.height, dpr));
   }
 
   /** หน้าต่างกล่องเก็บของ: อัปเดตตาม state · ปิดเองเมื่อเดินออกนอกระยะหรือกล่องถูกรื้อ */

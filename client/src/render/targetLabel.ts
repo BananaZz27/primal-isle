@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { CAMERA_ZOOM } from "../config";
+import { textResolution } from "../display";
 import type { LabelSpot } from "../ui/targetLabel";
 
 /** อยู่เหนือความมืดกลางคืน (ป้ายต้องอ่านออกตลอด) */
@@ -20,7 +20,7 @@ export class TargetLabelView {
         padding: { x: 2, y: 1 },
       })
       .setOrigin(0.5, 1)
-      .setResolution(CAMERA_ZOOM * 2) // คมแม้กล้องซูม
+      .setResolution(textResolution()) // คมแม้กล้องซูม
       .setDepth(LABEL_DEPTH)
       .setVisible(false);
   }

@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { textResolution } from "../display";
 import { Callbacks } from "@colyseus/sdk";
 import { DecorKind, nodeDef, TILE_SIZE, type Decor } from "@primal/shared";
 import type { NodeState } from "@primal/server/schema";
@@ -107,7 +108,7 @@ export class ResourceView {
         strokeThickness: 2,
       })
       .setOrigin(0.5, 1)
-      .setResolution(6)
+      .setResolution(textResolution())
       .setDepth(100000);
     this.scene.tweens.add({ targets: text, y: text.y - 10, alpha: 0, duration: 800, onComplete: () => text.destroy() });
   }
