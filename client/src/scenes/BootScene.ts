@@ -6,6 +6,8 @@ import { BAG, BED, BUILD_PALETTE, CHEST, DOOR, WALL } from "../art/structures";
 import { CRATE, LIVING_PALETTE } from "../art/living";
 import { paintHdFrames, paintTexture } from "../art/paint";
 import { drawDino } from "../art/hd/dinoRig";
+import { groundTileset } from "../art/hd/ground";
+import { bush, pineTree, rock, stump, tree, tuft } from "../art/hd/nature";
 import { SPECIES } from "../art/hd/species";
 import { hasHdArt } from "../render/dinoLayout";
 import { dinoWalkAnim } from "../render/dinos";
@@ -65,6 +67,17 @@ export class BootScene extends Phaser.Scene {
     if (!this.anims.exists(CAMPFIRE_ANIM)) {
       this.anims.create({ key: CAMPFIRE_ANIM, frames: [{ key: TEX.campfire, frame: 0 }, { key: TEX.campfire, frame: 1 }], frameRate: 5, repeat: -1 });
     }
+    // พื้น HD: น้ำ ทราย หญ้า ป่า (16 รูปขอบต่อชั้น) + ดอกไม้
+    paintHdFrames(this, TEX.hd.ground, [groundTileset()]);
+    // ทรัพยากร HD: ต้นไม้ 2 แบบ ตอ หิน 2 ขนาด พุ่มไม้มี/ไม่มีผล กอหญ้า
+    paintHdFrames(this, TEX.hd.tree(0), [tree(0)]);
+    paintHdFrames(this, TEX.hd.tree(1), [pineTree(0)]);
+    paintHdFrames(this, TEX.hd.stump, [stump()]);
+    paintHdFrames(this, TEX.hd.rock(0), [rock(1)]);
+    paintHdFrames(this, TEX.hd.rock(1), [rock(0)]);
+    paintHdFrames(this, TEX.hd.bush(true), [bush(true)]);
+    paintHdFrames(this, TEX.hd.bush(false), [bush(false)]);
+    paintHdFrames(this, TEX.hd.tuft, [tuft()]);
     // ไดโน HD (32 texel/ช่อง): ชนิดละ 2 เฟรม (ขาสลับ) จากโครงไดโน → animation เดิน
     for (const kind of DINO_KINDS) {
       if (!hasHdArt(kind)) continue;

@@ -67,3 +67,33 @@ describe("12 dinosaur species drawn from one rig", async () => {
     });
   }
 });
+
+describe("HD resources", async () => {
+  const nature = await import("../src/art/hd/nature");
+  const opaque = (c: { width: number; height: number; alpha(x: number, y: number): number }) => {
+    let n = 0;
+    for (let y = 0; y < c.height; y++) for (let x = 0; x < c.width; x++) if (c.alpha(x, y) > 200) n++;
+    return n;
+  };
+
+  it("two tree kinds (round, pine) at 64×64 that look different", () => {
+    const [round, pine] = [nature.tree(0), nature.pineTree(0)];
+    expect([pine.width, pine.height]).toEqual([64, 64]);
+    expect(Array.from(round.data)).not.toEqual(Array.from(pine.data));
+  });
+
+  it("stump, tuft, small and big rock are one tile (32×32); the small rock is smaller", () => {
+    for (const c of [nature.stump(), nature.tuft(), nature.rock(0), nature.rock(1)]) expect([c.width, c.height]).toEqual([32, 32]);
+    expect(opaque(nature.rock(1))).toBeLessThan(opaque(nature.rock(0)) * 0.75);
+  });
+
+  it("a picked bush has no berries left", () => {
+    const red = (c: InstanceType<typeof import("../src/art/hd/canvas").PixelCanvas>) => {
+      let n = 0;
+      for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) if (c.alpha(x, y) > 200 && nature.RAMPS.berry.includes(c.get(x, y))) n++;
+      return n;
+    };
+    expect(red(nature.bush(true))).toBeGreaterThan(5);
+    expect(red(nature.bush(false))).toBe(0);
+  });
+});

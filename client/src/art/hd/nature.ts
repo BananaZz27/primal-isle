@@ -13,12 +13,18 @@ export const RAMPS = {
 export function grassTile(variant = 0): PixelCanvas {
   const c = new PixelCanvas(32, 32);
   const r = rng(1000 + variant);
-  // พื้น: เป็นหย่อมอ่อน/เข้ม 3 ระดับ (ไม่ dither ทั้งผืน ไม่งั้นดูเป็นจุดซ่าเหมือนทีวี)
+  // พื้น: หย่อมอ่อน/เข้มวางสุ่มต่อแบบ (วนรอบขอบ → ต่อกันได้) — ไม่ใช้คลื่น sin ซึ่งทำให้เห็นเป็นตาราง
+  const blobs = Array.from({ length: 6 }, (_, i) => ({ x: r() * 32, y: r() * 32, rad: 3 + r() * 4, lighter: i % 2 === 0 }));
   for (let y = 0; y < 32; y++)
     for (let x = 0; x < 32; x++) {
-      const a = (2 * Math.PI) / 32; // คลื่นครบรอบพอดี 32 พิกเซล → ต่อกันไร้รอย
-      const wave = Math.sin(x * a * 2 + variant) * 0.5 + Math.cos(y * a * 3 - variant * 2) * 0.35 + Math.sin((x + y) * a) * 0.3;
-      const level = wave > 0.55 ? 3 : wave < -0.6 ? 1 : 2;
+      let level = 2;
+      for (const b of blobs) {
+        const dx = Math.min(Math.abs(x - b.x), 32 - Math.abs(x - b.x));
+        const dy = Math.min(Math.abs(y - b.y), 32 - Math.abs(y - b.y));
+        const d = Math.hypot(dx, dy * 1.3) / b.rad;
+        // หย่อมเป็นลายตาข่ายครึ่งหนึ่ง (dither) → อ่อน/เข้มขึ้นนิดเดียว ไม่เห็นเป็นจุดซ้ำ
+        if (d < 1 && ((x + y) & 1) === 0) level = b.lighter ? 3 : 1;
+      }
       c.set(x, y, RAMPS.grass[r() < 0.04 ? level + (r() < 0.5 ? -1 : 1) : level]);
     }
   // ใบหญ้าเป็นกอเล็กๆ: ขีดสั้น 2–3 พิกเซล โคนเข้ม ปลายอ่อน (วนรอบขอบ → ต่อกันได้)
@@ -77,25 +83,27 @@ export function tree(variant = 0): PixelCanvas {
   return c;
 }
 
-/** ก้อนหิน (32×32) ทรงมน ด้านบนเรียบ มีรอยแตก */
+/** ก้อนหิน (32×32) ทรงมน มีรอยแตก · variant 0 = ก้อนใหญ่, 1 = ก้อนเล็ก */
 export function rock(variant = 0): PixelCanvas {
   const c = new PixelCanvas(32, 32);
   const r = rng(3000 + variant);
-  c.shadow(16, 27, 12, 3.5);
-  c.sphere(15, 19, 12, 9, RAMPS.stone);
-  c.sphere(21, 21, 7, 6, RAMPS.stone, -0.08);
-  c.sphere(11, 16, 6, 4, RAMPS.stone, 0.1);
+  const k = variant === 1 ? 0.62 : 1; // ก้อนเล็กย่อทุกส่วน
+  const by = 27; // แนวพื้น
+  c.shadow(16, by, 12 * k, 3.5 * k);
+  c.sphere(15, by - 8 * k, 12 * k, 9 * k, RAMPS.stone);
+  c.sphere(15 + 6 * k, by - 6 * k, 7 * k, 6 * k, RAMPS.stone, -0.08);
+  c.sphere(15 - 4 * k, by - 11 * k, 6 * k, 4 * k, RAMPS.stone, 0.1);
   // รอยแตก
-  let x = 12 + Math.floor(r() * 4);
-  let y = 13;
-  for (let i = 0; i < 6; i++) {
+  let x = Math.round(15 - 3 * k + r() * 3 * k);
+  let y = Math.round(by - 14 * k);
+  for (let i = 0; i < Math.round(6 * k); i++) {
     c.set(x, y, RAMPS.stone[0]);
     c.set(x + 1, y, RAMPS.stone[1]);
     x += r() < 0.5 ? 1 : 0;
     y += 1;
   }
   // ประกายบนหิน
-  for (let i = 0; i < 6; i++) c.set(8 + Math.floor(r() * 8), 13 + Math.floor(r() * 3), RAMPS.stone[4]);
+  for (let i = 0; i < 6 * k; i++) c.set(15 - 7 * k + Math.floor(r() * 8 * k), by - 14 * k + Math.floor(r() * 3), RAMPS.stone[4]);
   c.outline();
   return c;
 }
@@ -125,5 +133,83 @@ export function bush(ripe = true, variant = 0): PixelCanvas {
       c.set(x, y, RAMPS.berry[3]);
     }
   c.outline();
+  return c;
+}
+
+/** ต้นสน (64×64): ใบเป็นชั้นสามเหลี่ยมซ้อนกัน 4 ชั้น ลำต้นสั้น */
+export function pineTree(variant = 0): PixelCanvas {
+  const c = new PixelCanvas(64, 64);
+  const r = rng(2500 + variant);
+  c.shadow(32, 59, 16, 4);
+  c.cylinder(29, 44, 7, 15, RAMPS.bark);
+  c.polygon([[26, 60], [29, 55], [36, 55], [39, 60]], RAMPS.bark, 0.35);
+  // ชั้นใบจากล่าง (กว้าง) ขึ้นบน (แคบ) — ด้านซ้ายโดนแสง ด้านขวาเงา
+  const tiers: [number, number, number][] = [
+    [50, 22, 16],
+    [38, 18, 15],
+    [27, 14, 13],
+    [17, 9, 11],
+  ];
+  for (const [base, half, h] of tiers) {
+    for (let y = base - h; y <= base; y++) {
+      const w = (half * (y - (base - h))) / h;
+      for (let x = Math.round(32 - w); x <= Math.round(32 + w); x++) {
+        const side = (x - 32) / (w + 0.01); // -1 ซ้าย … +1 ขวา
+        const light = 0.62 - side * 0.32 - ((y - (base - h)) / h) * 0.18;
+        c.set(x, y, RAMPS.leaf[Math.max(0, Math.min(5, Math.round(light * 5)))]);
+      }
+    }
+    // ขอบล่างของชั้นเป็นหยัก (ปลายกิ่ง)
+    for (let x = 32 - half; x <= 32 + half; x += 3) c.set(x, base + 1, RAMPS.leaf[1]);
+  }
+  c.set(32, 7, RAMPS.leaf[4]);
+  // จุดใบ
+  for (let i = 0; i < 60; i++) {
+    const x = 12 + Math.floor(r() * 40);
+    const y = 8 + Math.floor(r() * 42);
+    if (c.alpha(x, y) < 255) continue;
+    c.set(x, y, x < 32 ? RAMPS.leaf[5] : RAMPS.leaf[0]);
+  }
+  c.outline();
+  return c;
+}
+
+/** ตอไม้ (32×32): ต้นไม้ที่ถูกตัดหมด เห็นวงปีด้านบน */
+export function stump(): PixelCanvas {
+  const c = new PixelCanvas(32, 32);
+  c.shadow(16, 27, 10, 3);
+  c.polygon([[8, 27], [10, 23], [22, 23], [24, 27]], RAMPS.bark, 0.3); // รากบาน
+  c.cylinder(10, 16, 12, 9, RAMPS.bark);
+  // หน้าตัดด้านบน: วงรีสีเนื้อไม้ + วงปี
+  const wood = ["#8a6a42", "#b08a5a", "#d2ae7a", "#ecd2a0"];
+  c.sphere(16, 16, 6, 2.4, wood, 0.15);
+  for (let x = 12; x <= 20; x++) if (x % 3 === 0) c.set(x, 16, wood[0]);
+  c.set(16, 16, wood[0]);
+  c.outline();
+  return c;
+}
+
+/** กอหญ้า (32×32): ใบหญ้ายาวโค้งเป็นกอ (เก็บได้เส้นใย) */
+export function tuft(): PixelCanvas {
+  const c = new PixelCanvas(32, 32);
+  const r = rng(4500);
+  c.shadow(16, 27, 9, 2.5);
+  const blades = 11;
+  for (let i = 0; i < blades; i++) {
+    const t = i / (blades - 1); // 0 ซ้าย … 1 ขวา
+    const baseX = 11 + t * 10;
+    const tipX = 4 + t * 24 + (r() - 0.5) * 3;
+    const tipY = 8 + Math.abs(t - 0.5) * 12 + r() * 3;
+    const light = 0.75 - t * 0.45;
+    // ใบโค้ง: จากโคนตรงขึ้นแล้วเอนออก
+    for (let k = 0; k <= 12; k++) {
+      const u = k / 12;
+      const x = baseX + (tipX - baseX) * u * u;
+      const y = 27 - (27 - tipY) * u;
+      c.set(x, y, RAMPS.grass[Math.max(0, Math.min(4, Math.round((light + u * 0.25) * 4)))]);
+      if (u < 0.5) c.set(x + 1, y, RAMPS.grass[Math.max(0, Math.round(light * 4) - 1)]);
+    }
+  }
+  c.outline(0.5);
   return c;
 }

@@ -86,6 +86,15 @@ export const TEX = {
   dino: (kind: string) => `dino-${kind}`, // วาดเองใน BootScene (2 เฟรม)
   crate: "supply-crate", // ลังเสบียงมีร่มชูชีพ วาดเองใน BootScene
   glow: "fire-glow", // วงแสงกองไฟ (ไล่สีวงกลม) สร้างใน BootScene
+  /** ภาพ HD (32 texel/ช่อง ต้องแสดงที่ HD_SCALE) วาดใน BootScene จาก art/hd */
+  hd: {
+    tree: (variant: number) => `hd-tree-${variant % 2}`, // 0 ต้นกลม · 1 ต้นสน
+    stump: "hd-stump",
+    rock: (variant: number) => `hd-rock-${variant % 2}`, // 0 ก้อนเล็ก · 1 ก้อนใหญ่
+    bush: (ripe: boolean) => (ripe ? "hd-bush-ripe" : "hd-bush-picked"),
+    tuft: "hd-tuft",
+    ground: "hd-ground", // แผ่นภาพพื้น (art/hd/ground.ts)
+  },
 };
 
 /** พุ่มไม้ผลไม้ (ทรัพยากร) และตอไม้ (ต้นไม้ที่ถูกตัดหมด) */
