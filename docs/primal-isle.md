@@ -38,11 +38,16 @@
   - ออกแบบ: `docs/superpowers/specs/2026-11-24-m8-hd-art-design.md` (มีตารางไดโน 12 ชนิด + หลักฐานที่ใช้)
   - แสดงผล: `client/src/display.ts` — canvas = พิกเซลจริง (Phaser scale zoom 1/dpr), ซูมกล้องเป็นจำนวนเต็มให้ 1 texel = จำนวนพิกเซลเต็ม (DPR 2 → zoom 6 เท่าเดิม), ภาพ HD วาดที่ `HD_SCALE` 0.5 · DOM ทับโลกใช้ `screenPx` · จอ DPR 1 เห็นใกล้ขึ้นนิด (1 ช่อง 64px)
   - ภาพ (`client/src/art/hd/`): `canvas.ts` เครื่องมือ (ramp + แสงซ้ายบน + dither + outline) · `ground.ts` พื้นแบบ dual grid (4 ชั้น × 16 รูปขอบ ขอบต่อกันสนิท — มีเทสต์) · `nature.ts` ต้นไม้ 2 แบบ ตอ หิน พุ่มไม้ กอหญ้า · `dinoRig.ts` + `species.ts` ไดโน 12 ชนิด · `survivor.ts` คน 8 แบบ × 4 ทิศ × 4 ท่า · `built.ts` สิ่งก่อสร้าง กองไฟ ถุง ลัง · `icons.ts` ไอคอน 18 + หัวใจ
-  - `art/textures.ts` = ชื่อ texture + ตารางไอคอน (แทน ninjaAtlas) · BootScene วาดทุกอย่างตอนเริ่ม ~200ms (≈0.8 วิ ที่ CPU ช้า 4 เท่า)
+  - `art/textures.ts` = ชื่อ texture + ตารางไอคอน (แทน ninjaAtlas) · BootScene วาดพื้น/ทรัพยากร/ไดโน/สิ่งก่อสร้าง · ชุดคนวาดตอนผู้เล่นใส่ชุดนั้นโผล่มา (`ensureSurvivor`)
+  - เปิดเกม (build จริง): ถึงเมนู 0.91 วิ เทียบ main เดิม 0.87 วิ (CPU ช้า 4 เท่า: 2.26 vs 2.10)
+  - `art/hd/dinoArt.ts` จัดภาพไดโนกึ่งกลาง (หันแล้วไม่กระโดด) + `top` = แถวแรกที่มีภาพ (วางหลอดเลือด/ป้าย)
+  - มือถือ: ความละเอียดสูงสุด 2 (`effectiveDpr`) · พื้นช่องที่ถูกชั้นบนบังเต็มไม่วาด
+  - รีวิว opus แล้ว: แก้ Critical (ย่อ/ขยายหน้าต่างที่ DPR 1 แล้ว canvas ค้างขนาดเก่า — ต้อง resize ก่อน setZoom) + Important 4 ข้อ
+  - ยังไม่ได้แก้ (เล็ก): ข้อความในโลกไม่อัปเดตความคมเมื่อย้ายจอ · มุมชายฝั่งภาพกับจุดชนต่างกันไม่กี่พิกเซล · คอมเมนต์ใน `shared/src/world/tiles.ts` ยังชี้ไฟล์ groundFrames เดิม (รอแก้พร้อมงานฝั่งเซิร์ฟเวอร์ — แก้ shared = Render รีสตาร์ท โลกหาย)
   - ไดโนในเกมยังเป็น 4 ชนิดเดิม (raptor → ยูทาห์แร็พเตอร์, duckbill → พาราซอโรโลฟัส ชื่อในเกมเปลี่ยน id เดิม) · อีก 8 ชนิดวาดแล้ว รอขั้นที่ 9
   - วิธีดูภาพตัวอย่างนอกเกม: สคริปต์ tsx + pngjs (นอก repo) วาด PixelCanvas ลง PNG
 - ขึ้นออนไลน์แล้ว ✅ เซิร์ฟเวอร์ Render `wss://primal-isle-st4g.onrender.com` (ตัวแปร `SERVER_URL` ใน GitHub) · หน้าเว็บ https://bananazz27.github.io/primal-isle/ (deploy เองเมื่อ push main) · push ที่แตะ `server/` `shared/` = Render รีสตาร์ท โลกที่เปิดอยู่หาย
-- เทสต์ล่าสุด: shared 106 · server 91 · client 161
+- เทสต์ล่าสุด: shared 106 · server 91 · client 179
 
 ## การตัดสินใจระหว่างทำขั้นที่ 7 (rulings)
 - โลกใหม่เริ่มตอนเช้า (`dayStartSec` 60)
