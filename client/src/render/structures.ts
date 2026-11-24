@@ -3,6 +3,7 @@ import { Callbacks } from "@colyseus/sdk";
 import { STRUCTURE_DEFS, isStructureKind, TILE_SIZE } from "@primal/shared";
 import type { Drop, Structure } from "@primal/server/schema";
 import { TEX } from "../art/ninjaAtlas";
+import { HD_SCALE } from "../display";
 import type { WorldRoom } from "../net/connection";
 
 /** ชื่อ animation เปลวไฟ */
@@ -82,7 +83,7 @@ export class StructureView {
     const x = s.tx * TILE_SIZE + TILE_SIZE / 2;
     const baseY = (s.ty + 1) * TILE_SIZE;
     const texture = s.kind === "campfire" ? TEX.campfire : TEX.structure(s.kind);
-    const sprite = this.scene.add.sprite(x, baseY, texture, 0).setOrigin(0.5, 1);
+    const sprite = this.scene.add.sprite(x, baseY, texture, 0).setOrigin(0.5, 1).setScale(HD_SCALE);
     // ที่นอนแบนกับพื้น (ผู้เล่นเดินทับได้) ส่วนอื่นเรียงลึกตามโคน
     sprite.setDepth(s.kind === "bed" ? baseY - TILE_SIZE : baseY);
     if (s.kind === "campfire") sprite.play(CAMPFIRE_ANIM);
@@ -102,7 +103,7 @@ export class StructureView {
   private addBag(key: string, d: Drop) {
     if (this.bags.has(key)) return;
     const baseY = (d.ty + 1) * TILE_SIZE;
-    const img = this.scene.add.image(d.tx * TILE_SIZE + TILE_SIZE / 2, baseY, TEX.bag).setOrigin(0.5, 1).setDepth(baseY);
+    const img = this.scene.add.image(d.tx * TILE_SIZE + TILE_SIZE / 2, baseY, TEX.bag).setOrigin(0.5, 1).setScale(HD_SCALE).setDepth(baseY);
     this.bags.set(key, img);
     this.drops.set(key, { key, tx: d.tx, ty: d.ty });
   }

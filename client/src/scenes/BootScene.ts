@@ -7,6 +7,7 @@ import { CRATE, LIVING_PALETTE } from "../art/living";
 import { paintHdFrames, paintHdSheet, paintTexture } from "../art/paint";
 import { OUTFITS, survivorIdOf, survivorSheet } from "../art/hd/survivor";
 import { drawDino } from "../art/hd/dinoRig";
+import { bag, bed, campfire, chest, crate, door, wall } from "../art/hd/built";
 import { groundTileset } from "../art/hd/ground";
 import { bush, pineTree, rock, stump, tree, tuft } from "../art/hd/nature";
 import { SPECIES } from "../art/hd/species";
@@ -47,20 +48,18 @@ export class BootScene extends Phaser.Scene {
     TREE_RECTS.forEach((r, i) => sheet.add(TEX.tree(i), 0, r.x, r.y, r.w, r.h));
 
 
-    // กำแพง ประตู ที่นอน กล่องเก็บของ ถุงของ ลังเสบียง — วาดเอง
-    paintTexture(this, TEX.structure("wall"), [WALL], BUILD_PALETTE);
-    paintTexture(this, TEX.structure("door"), [DOOR], BUILD_PALETTE);
-    paintTexture(this, TEX.structure("bed"), [BED], BUILD_PALETTE);
-    paintTexture(this, TEX.structure("chest"), [CHEST], BUILD_PALETTE);
-    paintTexture(this, TEX.bag, [BAG], BUILD_PALETTE);
-    paintTexture(this, TEX.crate, [CRATE], LIVING_PALETTE);
+    // สิ่งก่อสร้าง ถุงของ ลังเสบียง HD
+    paintHdFrames(this, TEX.structure("wall"), [wall()]);
+    paintHdFrames(this, TEX.structure("door"), [door()]);
+    paintHdFrames(this, TEX.structure("bed"), [bed()]);
+    paintHdFrames(this, TEX.structure("chest"), [chest()]);
+    paintHdFrames(this, TEX.bag, [bag()]);
+    paintHdFrames(this, TEX.crate, [crate()]);
     // วงแสงกองไฟตอนกลางคืน (ไล่สีวงกลม ไม่ใช้ระบบ Lights ของ Phaser เพื่อให้มือถือลื่น)
     paintGlow(this, TEX.glow, GLOW_RADIUS);
 
-    // กองไฟวาดเอง: แผ่นภาพ 2 เฟรมเรียงแนวนอน แล้วแบ่งเป็น frame 0/1 ให้ animation
-    paintTexture(this, TEX.campfire, CAMPFIRE_FRAMES, CAMPFIRE_PALETTE);
-    const fire = this.textures.get(TEX.campfire);
-    CAMPFIRE_FRAMES.forEach((_, i) => fire.add(i, 0, i * TILE_SIZE, 0, TILE_SIZE, TILE_SIZE));
+    // กองไฟ HD: 2 เฟรม (เปลวสลับ) → animation
+    paintHdFrames(this, TEX.campfire, [campfire(0), campfire(1)]);
     if (!this.anims.exists(CAMPFIRE_ANIM)) {
       this.anims.create({ key: CAMPFIRE_ANIM, frames: [{ key: TEX.campfire, frame: 0 }, { key: TEX.campfire, frame: 1 }], frameRate: 5, repeat: -1 });
     }
