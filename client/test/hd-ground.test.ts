@@ -57,3 +57,41 @@ describe("HD ground tileset", () => {
         }
   });
 });
+
+describe("seams top/bottom too", () => {
+  const ts = groundTileset();
+  const alphaAt = (frame: number, x: number, y: number) =>
+    ts.alpha((frame % TILESET_COLUMNS) * 32 + x, Math.floor(frame / TILESET_COLUMNS) * 32 + y);
+  it("a tile above another with the same shared corners joins without a seam", () => {
+    for (const layer of LAYERS)
+      for (let a = 1; a < 16; a++)
+        for (let b = 1; b < 16; b++) {
+          // a's bottom corners (bl 4, br 8) must equal b's top corners (tl 1, tr 2)
+          if (((a >> 2) & 1) !== (b & 1) || ((a >> 3) & 1) !== ((b >> 1) & 1)) continue;
+          for (let x = 0; x < 32; x++)
+            expect(alphaAt(frameOf(layer, a, 0), x, 31) > 128, `${layer} ${a}/${b} x=${x}`).toBe(alphaAt(frameOf(layer, b, 0), x, 0) > 128);
+        }
+  });
+});
+
+describe("no overdraw: cells fully covered by a higher layer are skipped", () => {
+  const big = mapOf([
+    [G, G, G, G],
+    [G, F, F, G],
+    [G, F, F, G],
+    [G, G, G, G],
+  ]);
+  it("inside the forest only the forest is drawn; on open grass only grass (no hidden sand / water)", () => {
+    const f = dualFrames(big);
+    expect([f.water[2][2], f.sand[2][2], f.grass[2][2]]).toEqual([-1, -1, -1]);
+    expect(f.forest[2][2]).toBeGreaterThanOrEqual(0);
+    expect([f.water[1][1], f.sand[1][1]]).toEqual([-1, -1]); // หญ้าเต็มช่อง
+    expect(f.grass[1][1]).toBeGreaterThanOrEqual(0);
+  });
+
+  it("the coast still draws water under partial sand", () => {
+    const f = dualFrames(mapOf([[W, S], [W, S]]));
+    expect(f.water[1][1]).toBeGreaterThanOrEqual(0);
+    expect(f.sand[1][1]).toBeGreaterThanOrEqual(0);
+  });
+});

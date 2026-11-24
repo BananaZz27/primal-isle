@@ -40,9 +40,16 @@ export function rng(seed: number): () => number {
   };
 }
 
+/** แปลงสีครั้งเดียวต่อสี แล้วจำไว้ (วาดทั้งเกมเรียกหลายแสนครั้ง แต่มีสีไม่กี่ร้อยสี) */
+const rgbCache = new Map<string, [number, number, number]>();
 function hexToRgb(hex: string): [number, number, number] {
-  const n = parseInt(hex.slice(1, 7), 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  let rgb = rgbCache.get(hex);
+  if (!rgb) {
+    const n = parseInt(hex.slice(1, 7), 16);
+    rgb = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+    rgbCache.set(hex, rgb);
+  }
+  return rgb;
 }
 
 /** ทำสีให้มืดลง (0..1 = สัดส่วนที่เหลือ) */
@@ -85,8 +92,12 @@ export class PixelCanvas {
     if (!this.inside(x, y)) return;
     const i = (y * this.width + x) * 4;
     const [r, g, b] = hexToRgb(hex);
+    const d = this.data;
     if (alpha >= 1) {
-      this.data.set([r, g, b, 255], i);
+      d[i] = r;
+      d[i + 1] = g;
+      d[i + 2] = b;
+      d[i + 3] = 255;
       return;
     }
     const a0 = this.data[i + 3] / 255;

@@ -8,7 +8,7 @@ import { PLAYER_NAME_Y } from "./labelLayout";
 import { textResolution } from "../display";
 import type { WorldRoom } from "../net/connection";
 import { facingFrom, walkFrames, type Facing } from "./facing";
-import { walkAnimKey } from "./survivorAnims";
+import { ensureSurvivor, walkAnimKey } from "./survivorAnims";
 
 interface PlayerView {
   player: Player;
@@ -81,6 +81,7 @@ export class PlayerSprites {
 
   private add(sessionId: string, player: Player, isSelf: boolean) {
     const survivorId = survivorIdOf(player.colorIndex);
+    ensureSurvivor(this.scene, survivorId);
     // จุดอ้างอิง = กลางลำตัว (ตรงกับกล่องชนของ stepPlayer), เท้าอยู่ต่ำลงมา
     const sprite = this.scene.add.sprite(0, 0, TEX.survivor(survivorId), walkFrames("down")[0]).setOrigin(0.5, 0.75).setScale(HD_SCALE);
 

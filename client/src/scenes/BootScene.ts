@@ -1,17 +1,14 @@
 import Phaser from "phaser";
 import { DINO_KINDS } from "@primal/shared";
 import { TEX } from "../art/textures";
-import { paintHdFrames, paintHdSheet } from "../art/paint";
-import { OUTFITS, survivorIdOf, survivorSheet } from "../art/hd/survivor";
-import { drawDino } from "../art/hd/dinoRig";
+import { paintHdFrames } from "../art/paint";
+import { dinoArt } from "../art/hd/dinoArt";
 import { bag, bed, campfire, chest, crate, door, wall } from "../art/hd/built";
 import { groundTileset } from "../art/hd/ground";
 import { bush, pineTree, rock, stump, tree, tuft } from "../art/hd/nature";
-import { SPECIES } from "../art/hd/species";
 import { hasHdArt } from "../render/dinoLayout";
 import { dinoWalkAnim } from "../render/dinos";
 import { CAMPFIRE_ANIM } from "../render/structures";
-import { registerSurvivorAnims } from "../render/survivorAnims";
 import { GLOW_RADIUS, paintGlow } from "../render/night";
 
 /**
@@ -39,9 +36,7 @@ export class BootScene extends Phaser.Scene {
     if (!this.anims.exists(CAMPFIRE_ANIM)) {
       this.anims.create({ key: CAMPFIRE_ANIM, frames: [{ key: TEX.campfire, frame: 0 }, { key: TEX.campfire, frame: 1 }], frameRate: 5, repeat: -1 });
     }
-    // ผู้รอดชีวิต HD 8 แบบ (4 ทิศ × 4 ท่าเดิน) — ต้องวาดก่อนสร้าง animation
-    OUTFITS.forEach((o, i) => paintHdSheet(this, TEX.survivor(survivorIdOf(i)), survivorSheet(o), 32, 32));
-    registerSurvivorAnims(this);
+    // ผู้รอดชีวิต: วาดตอนผู้เล่นใส่ชุดนั้นโผล่มา (render/survivorAnims.ts → ensureSurvivor)
     // พื้น HD: น้ำ ทราย หญ้า ป่า (16 รูปขอบต่อชั้น) + ดอกไม้
     paintHdFrames(this, TEX.hd.ground, [groundTileset()]);
     // ทรัพยากร HD: ต้นไม้ 2 แบบ ตอ หิน 2 ขนาด พุ่มไม้มี/ไม่มีผล กอหญ้า
@@ -56,7 +51,7 @@ export class BootScene extends Phaser.Scene {
     // ไดโน HD (32 texel/ช่อง): ชนิดละ 2 เฟรม (ขาสลับ) จากโครงไดโน → animation เดิน
     for (const kind of DINO_KINDS) {
       if (!hasHdArt(kind)) continue;
-      paintHdFrames(this, TEX.dino(kind), [drawDino(SPECIES[kind], 0), drawDino(SPECIES[kind], 1)]);
+      paintHdFrames(this, TEX.dino(kind), dinoArt(kind).frames);
       if (!this.anims.exists(dinoWalkAnim(kind))) {
         this.anims.create({
           key: dinoWalkAnim(kind),

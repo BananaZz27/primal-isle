@@ -13,10 +13,23 @@ export const HD_SCALE = 0.5;
 /** ขนาด texel HD ที่อยากได้บนจอ (CSS px) → 1 ช่อง ≈ 48 CSS px เท่าก่อนมีระบบนี้ */
 const TARGET_CSS_PER_TEXEL = 1.5;
 
-/** ความละเอียดจอที่ใช้จริง (จำกัดไม่เกิน 3 — เกินนั้นเปลืองแรงเครื่องโดยตาแยกไม่ออก) */
+/**
+ * ความละเอียดที่ใช้วาดจริง: อย่างน้อย 1 · จอสัมผัส (มือถือ/แท็บเล็ต) ไม่เกิน 2 · เมาส์ไม่เกิน 3
+ * มือถือจอ 3x วาดที่ 2x ประหยัดพิกเซลที่ต้องระบายทุกเฟรมเกินครึ่ง โดยตาแทบแยกไม่ออก
+ */
+export function effectiveDpr(raw: number, coarsePointer: boolean): number {
+  return Math.min(coarsePointer ? 2 : 3, Math.max(1, raw || 1));
+}
+
+/** ความละเอียดจอที่ใช้จริงตอนนี้ */
 export function currentDpr(): number {
-  const dpr = typeof window === "undefined" ? 1 : window.devicePixelRatio || 1;
-  return Math.min(3, Math.max(1, dpr));
+  if (typeof window === "undefined") return 1;
+  return effectiveDpr(window.devicePixelRatio, window.matchMedia?.("(pointer: coarse)").matches ?? false);
+}
+
+/** ขนาด canvas (พิกเซลจริง ปัดเป็นจำนวนเต็ม) + zoom ของ Phaser ที่ย่อให้แสดงเท่าขนาด CSS ของหน้าต่าง */
+export function canvasSize(cssWidth: number, cssHeight: number, dpr: number): { width: number; height: number; zoom: number } {
+  return { width: Math.round(cssWidth * dpr), height: Math.round(cssHeight * dpr), zoom: 1 / dpr };
 }
 
 /** 1 texel HD = กี่พิกเซลจริง (จำนวนเต็ม ≥ 1) */

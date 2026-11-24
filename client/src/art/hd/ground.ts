@@ -53,15 +53,24 @@ export interface DualFrames {
   forest: number[][];
 }
 
-/** เฟรมของทุกชั้น ขนาด (size+1)² — วางที่ตำแหน่งโลก (i - 0.5, j - 0.5) ช่อง */
+/**
+ * เฟรมของทุกชั้น ขนาด (size+1)² — วางที่ตำแหน่งโลก (i - 0.5, j - 0.5) ช่อง
+ * ช่องที่มีชั้นสูงกว่าทึบเต็มช่องอยู่ข้างบน → -1 (ไม่วาด) ลดงานระบายสีของมือถือเกือบครึ่ง
+ */
 export function dualFrames(map: WorldMap): DualFrames {
   const n = map.size + 1;
   const grid = (f: (i: number, j: number) => number) => Array.from({ length: n }, (_, j) => Array.from({ length: n }, (_, i) => f(i, j)));
+  const mask = (layer: GroundLayer) => grid((i, j) => cornerMask(map, i, j, LAYER_RANK[layer]));
+  const masks = { sand: mask("sand"), grass: mask("grass"), forest: mask("forest") };
+  /** มีชั้นไหนในรายการนี้ทึบเต็มช่องที่ (i, j) ไหม */
+  const covered = (above: GroundLayer[], i: number, j: number) => above.some((l) => masks[l][j][i] === 15);
+  const frames = (layer: GroundLayer, above: GroundLayer[]) =>
+    grid((i, j) => (covered(above, i, j) ? -1 : frameOf(layer, masks[layer][j][i], variantAt(i, j))));
   return {
-    water: grid((i, j) => frameOf("water", 15, variantAt(i, j))),
-    sand: grid((i, j) => frameOf("sand", cornerMask(map, i, j, LAYER_RANK.sand), variantAt(i, j))),
-    grass: grid((i, j) => frameOf("grass", cornerMask(map, i, j, LAYER_RANK.grass), variantAt(i, j))),
-    forest: grid((i, j) => frameOf("forest", cornerMask(map, i, j, LAYER_RANK.forest), variantAt(i, j))),
+    water: grid((i, j) => (covered(["sand", "grass", "forest"], i, j) ? -1 : frameOf("water", 15, variantAt(i, j)))),
+    sand: frames("sand", ["grass", "forest"]),
+    grass: frames("grass", ["forest"]),
+    forest: frames("forest", []),
   };
 }
 
@@ -169,7 +178,19 @@ export function groundTileset(): PixelCanvas {
     for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) c.set(ox + x, oy + y, tex(x, y));
   }
 
-  const textures: Record<GroundLayer, (v: number) => (x: number, y: number) => string> = { sand: sandTex, grass: grassTex, forest: forestTex };
+  // ลายพื้นผิวสร้างครั้งเดียวต่อชั้น+แบบ (เดิมสร้างใหม่ทุกรูปขอบ = ช้าตอนเปิดเกม)
+  const makers: Record<GroundLayer, (v: number) => (x: number, y: number) => string> = { sand: sandTex, grass: grassTex, forest: forestTex };
+  const texCache = new Map<string, (x: number, y: number) => string>();
+  const textures = Object.fromEntries(
+    LAYERS.map((l) => [
+      l,
+      (v: number) => {
+        const k = `${l}${v}`;
+        if (!texCache.has(k)) texCache.set(k, makers[l](v));
+        return texCache.get(k)!;
+      },
+    ]),
+  ) as Record<GroundLayer, (v: number) => (x: number, y: number) => string>;
   LAYERS.forEach((layer, li) => {
     for (let mask = 1; mask < 16; mask++) {
       const variants = mask === 15 ? FULL_VARIANTS : 1;

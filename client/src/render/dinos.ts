@@ -88,7 +88,11 @@ export class DinoView {
   }
 
   private add(key: string, dino: Dino) {
-    if (!isDinoKind(dino.kind) || !hasHdArt(dino.kind)) return;
+    if (!isDinoKind(dino.kind) || !hasHdArt(dino.kind)) {
+      // ชนิดใหม่ในเซิร์ฟเวอร์แต่ยังไม่มีภาพ → ไม่วาด (แต่ยังกัดได้!) ต้องเพิ่มใน art/hd/species.ts
+      console.error(`no HD art for dino kind "${dino.kind}"`);
+      return;
+    }
     const half = dinoDef(dino.kind).half;
     // จุดอ้างอิง = กลางกล่องชน · ภาพ HD วางให้เท้าอยู่ที่ dinoFeetY แล้วย่อ HD_SCALE
     const spec = SPECIES[dino.kind as keyof typeof SPECIES];

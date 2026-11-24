@@ -1,5 +1,6 @@
 import { dinoDef, type DinoKind } from "@primal/shared";
 import { SPECIES } from "../art/hd/species";
+import { dinoArt } from "../art/hd/dinoArt";
 import { HD_SCALE } from "../display";
 
 /**
@@ -13,8 +14,9 @@ export const hasHdArt = (kind: string): kind is keyof typeof SPECIES & DinoKind 
 /** เท้าอยู่ต่ำกว่ากลางกล่องชนครึ่งหนึ่งของ half (ดูยืนบนพื้นตรงกล่องชน) */
 export const dinoFeetY = (kind: DinoKind): number => Math.round(dinoDef(kind).half * 0.5);
 
-/** ขอบบนของภาพ (หัว/หลัง/ใบเรือ) */
+/** ขอบบนของสิ่งที่วาดจริง (หัว/หลัง/ใบเรือ/แผงคอ) — ไม่ใช่ขอบบนของ canvas ซึ่งอาจว่างอยู่หลายแถว */
 export function dinoTopY(kind: DinoKind): number {
-  const spec = hasHdArt(kind) ? SPECIES[kind] : null;
-  return dinoFeetY(kind) - (spec ? spec.groundY * HD_SCALE : dinoDef(kind).half * 2);
+  if (!hasHdArt(kind)) return dinoFeetY(kind) - dinoDef(kind).half * 2;
+  const art = dinoArt(kind);
+  return dinoFeetY(kind) - (art.groundY - art.top) * HD_SCALE;
 }

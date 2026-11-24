@@ -29,3 +29,22 @@ describe("display scaling for crisp pixels at any screen density", () => {
     expect(screenPx(300, 1)).toBe(300);
   });
 });
+
+describe("canvas sizing and screen density on phones", async () => {
+  const { canvasSize, effectiveDpr } = await import("../src/display");
+
+  it("canvas = whole device pixels of the window; CSS zoom undoes the density", () => {
+    expect(canvasSize(915, 412, 2.625)).toEqual({ width: 2402, height: 1082, zoom: 1 / 2.625 });
+    expect(canvasSize(800, 500, 1)).toEqual({ width: 800, height: 500, zoom: 1 });
+  });
+
+  it("touch devices render at most at density 2 (fewer pixels to fill per frame); mice keep up to 3", () => {
+    expect(effectiveDpr(3, true)).toBe(2);
+    expect(effectiveDpr(2.625, true)).toBe(2);
+    expect(effectiveDpr(3, false)).toBe(3);
+    expect(effectiveDpr(0.5, false)).toBe(1);
+  });
+
+  it("at density 1 a tile is 64 CSS px (closest whole-pixel size to 48) — documented trade-off", () =>
+    expect((cameraZoom(1) * 16) / 1).toBe(64));
+});

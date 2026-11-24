@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { generateDecor, generateWorld, solidFromNodes, TILE_SIZE } from "@primal/shared";
 import type { Player } from "@primal/server/schema";
-import { cameraZoom, currentDpr, screenPx } from "../display";
+import { cameraZoom, screenPx } from "../display";
 import { combineInputs } from "../input/combine";
 import { InteractControls, pickTarget, type PickWorld, type Target } from "../input/interact";
 import { TargetLabelView } from "../render/targetLabel";
@@ -93,9 +93,9 @@ export class WorldScene extends Phaser.Scene {
     const worldPx = map.size * TILE_SIZE;
     const cam = this.cameras.main;
     cam.setBounds(0, 0, worldPx, worldPx);
-    cam.setZoom(cameraZoom(currentDpr()));
+    cam.setZoom(cameraZoom(1 / this.scale.zoom));
     // หมุนจอ / ลากไปจอที่ความละเอียดต่างกัน → ซูมใหม่ให้เม็ดพิกเซลยังเป็นจำนวนเต็ม
-    const onResize = () => cam.setZoom(cameraZoom(currentDpr()));
+    const onResize = () => cam.setZoom(cameraZoom(1 / this.scale.zoom));
     this.scale.on("resize", onResize);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.scale.off("resize", onResize));
 
@@ -309,7 +309,7 @@ export class WorldScene extends Phaser.Scene {
     const crate = pos ? nearestCrate(pos.x, pos.y, this.crates.list()) : null;
     const cam = this.cameras.main;
     const view = cam.worldView;
-    const dpr = currentDpr();
+    const dpr = 1 / this.scale.zoom; // ความละเอียดที่ canvas ใช้อยู่จริง
     const target = crate && {
       // พิกเซลของ canvas → CSS px (ลูกศรเป็น HTML)
       sx: screenPx(((crate.tx + 0.5) * TILE_SIZE - view.x) * cam.zoom, dpr),
